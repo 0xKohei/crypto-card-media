@@ -6,13 +6,13 @@ import { topPicks } from "@/data/top-picks";
 import ArticleCard from "@/components/articles/ArticleCard";
 import { topPickLabels, topPickIcons } from "@/lib/utils";
 import HeroCanvas from "@/components/hero/HeroCanvas";
-import CardArtwork from "@/components/cards/CardArtwork";
+import CardGrid from "@/components/cards/CardGrid";
+import ShowcaseCard from "@/components/cards/ShowcaseCard";
 import {
   LayoutGrid,
   GitCompare,
   SlidersHorizontal,
   BookOpen,
-  ExternalLink,
   ChevronRight,
   Shield,
   Globe,
@@ -24,12 +24,6 @@ export const metadata: Metadata = {
   title: "クリプトカード比較メディア | グローバル金融メディア CryptoCardNavi",
   description:
     "世界の主要クリプトカードを日本語で徹底比較。Tria・Kast・RedotPay・Tevau・Bitget Wallet Card・Jupiter Globalの手数料・還元率・対応地域を一覧で確認。",
-};
-
-const rankMedal: Record<number, { bg: string; text: string; label: string }> = {
-  1: { bg: "bg-amber-400", text: "text-amber-900", label: "Gold" },
-  2: { bg: "bg-slate-300", text: "text-slate-700", label: "Silver" },
-  3: { bg: "bg-amber-600/80", text: "text-amber-100", label: "Bronze" },
 };
 
 export default function HomePage() {
@@ -142,95 +136,18 @@ export default function HomePage() {
           </p>
 
           {/* Ranking list */}
-          <div className="space-y-3">
+          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {overallRanking?.entries.map((entry) => {
               const card = cards.find((c) => c.slug === entry.cardSlug);
               if (!card) return null;
-              const medal = rankMedal[entry.rank];
 
               return (
-                <div
+                <ShowcaseCard
                   key={entry.rank}
-                  className={`group bg-white rounded-2xl border transition-all hover:shadow-md ${
-                    entry.rank <= 3
-                      ? "border-slate-200 hover:border-blue-200"
-                      : "border-slate-100 hover:border-slate-200"
-                  }`}
-                >
-                  <div className="flex items-center gap-4 p-5 sm:p-6">
-                    {/* Left: rank + card image */}
-                    <div className="flex flex-col items-center gap-2 flex-shrink-0">
-                      <div className={`w-8 h-8 rounded-lg flex items-center justify-center text-sm font-bold ${
-                        medal ? `${medal.bg} ${medal.text}` : "bg-slate-100 text-slate-600"
-                      }`}>
-                        {entry.rank}
-                      </div>
-                      <CardArtwork
-                        card={card}
-                        className="w-24"
-                        imageClassName="rounded-[14px]"
-                        fallbackClassName="rounded-lg text-xl"
-                        paddingClassName="p-3"
-                      />
-                    </div>
-
-                    {/* Center: name + benefit */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-2 flex-wrap mb-1">
-                        <span className="font-bold text-slate-900 text-base">{card.name}</span>
-                        {card.isSponsor && (
-                          <span className="text-xs text-slate-400 bg-slate-100 px-1.5 py-0.5 rounded">PR</span>
-                        )}
-                      </div>
-                      {card.keyStrength && (
-                        <span className="inline-flex items-center text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full font-medium mb-1.5">
-                          {card.keyStrength}
-                        </span>
-                      )}
-                      <p className="text-xs text-slate-500 line-clamp-2">{entry.reason}</p>
-                    </div>
-
-                    {/* Right: stats + CTA */}
-                    <div className="hidden sm:flex flex-col items-end gap-3 flex-shrink-0">
-                      <div className="flex gap-4 text-right">
-                        <div>
-                          <p className="text-xs text-slate-400">FX手数料</p>
-                          <p className="text-sm font-bold text-slate-800 whitespace-nowrap">{card.fxFee.split("、")[0].split("（")[0]}</p>
-                        </div>
-                        <div>
-                          <p className="text-xs text-slate-400">還元率</p>
-                          <p className="text-sm font-bold text-slate-800">{card.cashbackRate}</p>
-                        </div>
-                      </div>
-                      <Link
-                        href={`/cards/${card.slug}`}
-                        className="flex items-center gap-1.5 px-5 py-2 text-sm font-bold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors shadow-sm shadow-blue-200"
-                      >
-                        詳細を見る <ChevronRight className="w-3.5 h-3.5" />
-                      </Link>
-                    </div>
-                  </div>
-
-                  {/* Mobile only: stats + CTA row */}
-                  <div className="sm:hidden px-5 pb-5 flex items-center justify-between border-t border-slate-50 pt-3">
-                    <div className="flex gap-4">
-                      <div>
-                        <p className="text-xs text-slate-400">FX手数料</p>
-                        <p className="text-xs font-bold text-slate-700">{card.fxFee.split("、")[0].split("（")[0]}</p>
-                      </div>
-                      <div>
-                        <p className="text-xs text-slate-400">還元率</p>
-                        <p className="text-xs font-bold text-slate-700">{card.cashbackRate}</p>
-                      </div>
-                    </div>
-                    <Link
-                      href={`/cards/${card.slug}`}
-                      className="text-xs font-bold text-white bg-blue-600 px-3 py-1.5 rounded-lg"
-                    >
-                      詳細 →
-                    </Link>
-                  </div>
-                </div>
+                  card={card}
+                  rank={entry.rank}
+                  reason={entry.reason}
+                />
               );
             })}
           </div>
@@ -260,73 +177,7 @@ export default function HomePage() {
             </Link>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {priorityCards.map((card) => (
-              <div
-                key={card.id}
-                className="group bg-white border border-slate-200 rounded-2xl overflow-hidden hover:border-blue-200 hover:shadow-lg transition-all"
-              >
-                {/* Card header */}
-                <div className={`h-28 bg-gradient-to-br ${card.coverColor} flex items-center justify-between px-5 relative`}>
-                  <div className="flex items-center gap-3">
-                    <div className="w-14 h-14 bg-white/20 rounded-xl flex items-center justify-center text-3xl">
-                      {card.logo}
-                    </div>
-                    <div>
-                      <h3 className="font-bold text-white text-lg leading-tight">{card.name}</h3>
-                      <p className="text-white/70 text-xs mt-0.5">{card.network}</p>
-                    </div>
-                  </div>
-                  {card.keyStrength && (
-                    <span className="absolute top-3 right-3 text-xs bg-white/20 text-white border border-white/30 px-2 py-0.5 rounded-full backdrop-blur-sm">
-                      {card.keyStrength}
-                    </span>
-                  )}
-                </div>
-
-                {/* Key specs */}
-                <div className="p-4">
-                  <p className="text-xs text-slate-600 leading-relaxed mb-4 line-clamp-2">
-                    {card.shortDescription}
-                  </p>
-
-                  <div className="grid grid-cols-2 gap-2 mb-4">
-                    {[
-                      { label: "FX手数料", value: card.fxFee.split("、")[0].split("（")[0] },
-                      { label: "還元率", value: card.cashbackRate },
-                      { label: "日本対応", value: card.regionAvailability.includes("global") || card.regionAvailability.includes("asia") ? "申込可能性あり" : "要確認" },
-                      { label: "カストディ", value: card.custodyType === "non-custodial" ? "非カストディ" : "カストディ型" },
-                    ].map((spec) => (
-                      <div key={spec.label} className="bg-slate-50 rounded-lg p-2.5">
-                        <p className="text-xs text-slate-400 mb-0.5">{spec.label}</p>
-                        <p className="text-xs font-semibold text-slate-800 truncate">{spec.value}</p>
-                      </div>
-                    ))}
-                  </div>
-
-                  <div className="flex gap-2">
-                    <Link
-                      href={`/cards/${card.slug}`}
-                      className="flex-1 text-center text-sm font-medium text-slate-700 border border-slate-200 py-2 rounded-lg hover:bg-slate-50 transition-colors"
-                    >
-                      詳細を見る
-                    </Link>
-                    {card.referralUrl && (
-                      <a
-                        href={card.referralUrl}
-                        target="_blank"
-                        rel="noopener noreferrer sponsored"
-                        className="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 py-2 rounded-lg transition-colors"
-                      >
-                        公式サイト
-                        <ExternalLink className="w-3 h-3" />
-                      </a>
-                    )}
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
+          <CardGrid cards={priorityCards} columns={3} />
         </div>
       </section>
 
