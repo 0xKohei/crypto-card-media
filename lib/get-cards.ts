@@ -16,6 +16,14 @@ export interface AdminRankingEntry {
   keyStrength?: string;
 }
 
+/** DB rankings + cards join 済みエントリー (表示用) */
+export interface RankingEntry {
+  rank: number;
+  card: Card & { isVisible?: boolean };
+  reason: string;
+  shortReason: string;
+}
+
 export interface HomepageFeaturedSlot {
   slot: number;
   card: Card & { isVisible?: boolean };
@@ -112,6 +120,56 @@ export async function getPriorityCards(): Promise<(Card & { isVisible?: boolean 
   return cards
     .filter((c) => c.isPriority && c.priorityRank != null)
     .sort((a, b) => (a.priorityRank ?? 99) - (b.priorityRank ?? 99));
+}
+
+/**
+ * ランキングエントリーをカード情報込みで返す。
+ * DB に該当カテゴリーのデータがない場合は data/top-picks.ts の静的データにフォールバック。
+ */
+export async function getRankingWithCards(category: string): Promise<RankingEntry[]> {
+  const [dbEntries, allCards] = await Promise.all([
+    getRankings(category),
+    getCards(),
+  ]);
+
+  if (dbEntries.length > 0) {
+    return dbEntries
+      .sort((a, b) => a.rank - b.rank)
+      .map((e) => {
+        const card = allCards.find((c) => c.slug === e.card_slug);
+        if (!card) {
+          console.error(
+            `[get-cards] getRankingWithCards("${category}"): card_slug="${e.card_slug}" が見つかりません`,
+          );
+          return null;
+        }
+        return {
+          rank: e.rank,
+          card,
+          reason: e.reason ?? "",
+          shortReason: e.short_reason ?? "",
+        };
+      })
+      .filter((e): e is RankingEntry => e !== null);
+  }
+
+  // フォールバック: data/top-picks.ts の静的エントリーを使用
+  const { topPicks } = await import("@/data/top-picks");
+  const tp = topPicks.find((t) => t.slug === category);
+  if (!tp) return [];
+
+  return tp.entries
+    .map((e) => {
+      const card = allCards.find((c) => c.slug === e.cardSlug);
+      if (!card) return null;
+      return {
+        rank: e.rank,
+        card,
+        reason: e.reason ?? "",
+        shortReason: e.shortReason ?? e.reason ?? "",
+      };
+    })
+    .filter((e): e is RankingEntry => e !== null);
 }
 
 /**

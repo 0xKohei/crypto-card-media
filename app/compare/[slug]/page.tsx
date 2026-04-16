@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { cards, getCardBySlug } from "@/data/cards";
+import { getCards } from "@/lib/get-cards";
 import { comparisons, getComparisonBySlug } from "@/data/comparisons";
 import { articles } from "@/data/articles";
 import Breadcrumb from "@/components/layout/Breadcrumb";
@@ -16,11 +16,8 @@ import {
 import { CheckCircle, XCircle, ExternalLink, AlertCircle } from "lucide-react";
 import type { Card } from "@/types";
 
-export const dynamic = "force-static";
-
-export async function generateStaticParams() {
-  return comparisons.map((c) => ({ slug: c.slug }));
-}
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 
 export async function generateMetadata({
   params,
@@ -70,23 +67,21 @@ function ScoreCell({ score }: { score: number }) {
   );
 }
 
-export default function CompareDetailPage({ params }: { params: { slug: string } }) {
+export default async function CompareDetailPage({ params }: { params: { slug: string } }) {
   const comp = getComparisonBySlug(params.slug);
+  const allCards = await getCards();
+  const findCard = (slug: string) => allCards.find((c) => c.slug === slug);
 
   // Fallback: try to parse slug as "cardA-vs-cardB"
   let compCards: Card[] = [];
 
   if (comp) {
-    compCards = comp.cardSlugs
-      .map((s) => getCardBySlug(s))
-      .filter(Boolean) as Card[];
+    compCards = comp.cardSlugs.map((s) => findCard(s)).filter(Boolean) as Card[];
   } else {
     // Dynamic parsing
     const parts = params.slug.split("-vs-");
     if (parts.length >= 2) {
-      compCards = parts
-        .map((p) => getCardBySlug(p))
-        .filter(Boolean) as Card[];
+      compCards = parts.map((p) => findCard(p)).filter(Boolean) as Card[];
     }
     if (compCards.length < 2) notFound();
   }

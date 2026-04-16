@@ -2,9 +2,9 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
 import { topPicks, getTopPickBySlug } from "@/data/top-picks";
-import { cards } from "@/data/cards";
 import { articles } from "@/data/articles";
 import { comparisons } from "@/data/comparisons";
+import { getRankingWithCards } from "@/lib/get-cards";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import CardArtwork from "@/components/cards/CardArtwork";
 import { topPickLabels, topPickIcons } from "@/lib/utils";
@@ -18,7 +18,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 
-export const dynamic = "force-static";
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   return topPicks.map((tp) => ({ slug: tp.slug }));
@@ -43,22 +44,22 @@ const rankStyle: Record<number, { wrap: string; badge: string; badgeText: string
   3: { wrap: "border-amber-200", badge: "bg-amber-200 text-amber-800", badgeText: "" },
 };
 
-export default function TopPickDetailPage({ params }: { params: { slug: string } }) {
+export default async function TopPickDetailPage({ params }: { params: { slug: string } }) {
   const tp = getTopPickBySlug(params.slug);
   if (!tp) notFound();
 
-  const relatedArticles = articles.filter((a) => tp.relatedArticleSlugs.includes(a.slug));
-  const relatedComparisons = comparisons.filter((c) => tp.relatedComparisonSlugs.includes(c.slug));
+  const [entries, relatedArticles, relatedComparisons] = await Promise.all([
+    getRankingWithCards(params.slug),
+    Promise.resolve(articles.filter((a) => tp.relatedArticleSlugs.includes(a.slug))),
+    Promise.resolve(comparisons.filter((c) => tp.relatedComparisonSlugs.includes(c.slug))),
+  ]);
 
-  const itemListElements = tp.entries.map((entry) => {
-    const card = cards.find((c) => c.slug === entry.cardSlug);
-    return {
-      "@type": "ListItem",
-      position: entry.rank,
-      name: card?.name ?? entry.cardSlug,
-      url: `https://cryptocardnavi.com/cards/${entry.cardSlug}`,
-    };
-  });
+  const itemListElements = entries.map((entry) => ({
+    "@type": "ListItem",
+    position: entry.rank,
+    name: entry.card.name,
+    url: `https://cryptocardnavi.com/cards/${entry.card.slug}`,
+  }));
 
   return (
     <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -95,11 +96,10 @@ export default function TopPickDetailPage({ params }: { params: { slug: string }
         </div>
       </div>
 
-      {/* Ranking entries */}
+      {/* Ranking entries — DB から取得した cards で表示 */}
       <div className="space-y-5 mb-12">
-        {tp.entries.map((entry) => {
-          const card = cards.find((c) => c.slug === entry.cardSlug);
-          if (!card) return null;
+        {entries.map((entry) => {
+          const { card } = entry;
           const style = rankStyle[entry.rank] ?? { wrap: "border-gray-200", badge: "bg-gray-100 text-gray-600", badgeText: "" };
 
           return (
@@ -120,9 +120,9 @@ export default function TopPickDetailPage({ params }: { params: { slug: string }
                       1位
                     </span>
                   )}
-                  {entry.keyStrength && (
+                  {card.keyStrength && (
                     <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">
-                      {entry.keyStrength}
+                      {card.keyStrength}
                     </span>
                   )}
                 </div>

@@ -3,7 +3,8 @@ import { getCards } from "@/lib/get-cards";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import CardsClient from "./CardsClient";
 
-export const dynamic = "force-static";
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 
 export const metadata: Metadata = {
   title: "クリプトカード一覧・比較表",

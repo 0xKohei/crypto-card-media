@@ -1,7 +1,8 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import Link from "next/link";
-import { cards, getCardBySlug } from "@/data/cards";
+import { cards } from "@/data/cards";
+import { getCards, getCardBySlug } from "@/lib/get-cards";
 import { getRelatedArticlesForCard } from "@/data/articles";
 import { getComparisonsForCard } from "@/data/comparisons";
 import { topPicks } from "@/data/top-picks";
@@ -30,7 +31,8 @@ import {
   Calendar,
 } from "lucide-react";
 
-export const dynamic = "force-static";
+export const runtime = "edge";
+export const dynamic = "force-dynamic";
 
 export async function generateStaticParams() {
   return cards.map((c) => ({ slug: c.slug }));
@@ -41,7 +43,7 @@ export async function generateMetadata({
 }: {
   params: { slug: string };
 }): Promise<Metadata> {
-  const card = getCardBySlug(params.slug);
+  const card = await getCardBySlug(params.slug);
   if (!card) return {};
 
   return {
@@ -50,8 +52,11 @@ export async function generateMetadata({
   };
 }
 
-export default function CardDetailPage({ params }: { params: { slug: string } }) {
-  const card = getCardBySlug(params.slug);
+export default async function CardDetailPage({ params }: { params: { slug: string } }) {
+  const [card, allCards] = await Promise.all([
+    getCardBySlug(params.slug),
+    getCards(),
+  ]);
   if (!card) notFound();
 
   const relatedArticles = getRelatedArticlesForCard(card.slug);
@@ -380,7 +385,7 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
       <section className="mt-12 border-t border-gray-100 pt-10">
         <h2 className="text-xl font-bold text-gray-900 mb-6">他のカードと比較する</h2>
         <div className="flex flex-wrap gap-3">
-          {cards
+          {allCards
             .filter((c) => c.slug !== card.slug)
             .map((otherCard) => (
               <Link
