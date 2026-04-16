@@ -2,11 +2,11 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { articles } from "@/data/articles";
 import { topPicks } from "@/data/top-picks";
-import { getCards, getPriorityCards, getHomepageFeatured } from "@/lib/get-cards";
+import { getCards, getRankingWithCards, getHomepageFeatured } from "@/lib/get-cards";
 import ArticleCard from "@/components/articles/ArticleCard";
 import { topPickLabels, topPickIcons } from "@/lib/utils";
 import HeroCanvas from "@/components/hero/HeroCanvas";
-import CardGrid from "@/components/cards/CardGrid";
+import ShowcaseCard from "@/components/cards/ShowcaseCard";
 import RankingCard from "@/components/cards/RankingCard";
 import {
   LayoutGrid,
@@ -31,10 +31,13 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [allCards, priorityCards, featuredSlots] = await Promise.all([
-    getCards(),
-    getPriorityCards(),
+  // rankings(overall) → 人気ランキングセクション (rankings.rank / rankings.short_reason)
+  // homepage_featured → 掲載カード一覧セクション (homepage_featured.short_reason)
+  // allCards → 用途別ランキングの1位カード名表示にのみ使用
+  const [rankingEntries, featuredSlots, allCards] = await Promise.all([
+    getRankingWithCards("overall"),
     getHomepageFeatured(),
+    getCards(),
   ]);
   const featuredArticles = articles.filter((a) => a.featured).slice(0, 3);
 
@@ -130,14 +133,15 @@ export default async function HomePage() {
             当サイト内での注目度・掲載状況をもとに表示しています。
           </p>
 
+          {/* rankings テーブルから: rank / short_reason / cards.name / cards.image */}
           <div className="space-y-3">
-            {featuredSlots.map((slot) => (
+            {rankingEntries.slice(0, 3).map((entry) => (
               <RankingCard
-                key={slot.slot}
-                card={slot.card}
-                rank={slot.slot}
-                reason={slot.shortReason}
-                shortReason={slot.shortReason}
+                key={entry.rank}
+                card={entry.card}
+                rank={entry.rank}
+                reason={entry.shortReason}
+                shortReason={entry.shortReason}
               />
             ))}
           </div>
@@ -155,7 +159,7 @@ export default async function HomePage() {
       </section>
 
       {/* ====================================================== */}
-      {/* Card highlights */}
+      {/* Card highlights — homepage_featured から: short_reason / cards.name / cards.image */}
       {/* ====================================================== */}
       <section className="py-16 px-4 bg-white">
         <div className="max-w-7xl mx-auto">
@@ -165,7 +169,15 @@ export default async function HomePage() {
               全カードを見る <ChevronRight className="w-4 h-4" />
             </Link>
           </div>
-          <CardGrid cards={priorityCards} columns={3} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            {featuredSlots.map((slot) => (
+              <ShowcaseCard
+                key={slot.slot}
+                card={slot.card}
+                reason={slot.shortReason || undefined}
+              />
+            ))}
+          </div>
         </div>
       </section>
 

@@ -113,18 +113,25 @@ export default async function TopPickDetailPage({ params }: { params: { slug: st
                 <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${style.badge}`}>
                   {entry.rank}
                 </div>
-                <div className="flex items-center gap-2 flex-wrap flex-1">
-                  <span className="font-bold text-gray-900">{card.name}</span>
-                  {entry.rank === 1 && (
-                    <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">
-                      <Trophy className="w-3 h-3" />
-                      1位
-                    </span>
-                  )}
-                  {card.keyStrength && (
-                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">
-                      {card.keyStrength}
-                    </span>
+                <div className="flex flex-col gap-1 flex-1 min-w-0">
+                  <div className="flex items-center gap-2 flex-wrap">
+                    <span className="font-bold text-gray-900">{card.name}</span>
+                    {entry.rank === 1 && (
+                      <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">
+                        <Trophy className="w-3 h-3" />
+                        1位
+                      </span>
+                    )}
+                    {/* cards.keyStrength: カード固有の強みバッジ */}
+                    {card.keyStrength && (
+                      <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">
+                        {card.keyStrength}
+                      </span>
+                    )}
+                  </div>
+                  {/* rankings.short_reason: このランキングカテゴリーでの短文評価 */}
+                  {entry.shortReason && (
+                    <p className="text-xs text-gray-500 leading-snug">{entry.shortReason}</p>
                   )}
                 </div>
               </div>

@@ -868,7 +868,7 @@ function RankingEditor({
           <div className="p-4 bg-slate-900 space-y-3">
             <div>
               <label className="block text-xs text-slate-400 mb-1">
-                一言理由 (shortReason) — トップページのランキングカードに表示
+                一言理由 (shortReason) — トップページ「人気ランキング」 / /top-picks の短文
               </label>
               <input
                 type="text"
@@ -1062,7 +1062,7 @@ function HomepageFeaturedEditor({
             </div>
             <div>
               <label className="block text-xs text-slate-400 mb-1">
-                一言コメント (short_reason) — トップページのランキングカードに表示
+                一言コメント (short_reason) — トップページ「掲載カード一覧」に表示
               </label>
               <input
                 type="text"
@@ -1090,9 +1090,10 @@ function HomepageFeaturedEditor({
       <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-xs text-slate-400 space-y-1.5">
         <p className="font-semibold text-slate-300">トップ掲載について</p>
         <ul className="space-y-1 list-disc list-inside">
-          <li>スロット 1〜3 がトップページの「人気ランキング」に表示されます</li>
+          <li>スロット 1〜3 がトップページの「掲載カード一覧」に表示されます</li>
+          <li>「人気ランキング」セクションは「ランキング管理」タブで管理します</li>
           <li>「表示する」をオフにするとそのスロットは非表示になります</li>
-          <li>保存後は右上の「キャッシュ更新」で即時反映できます</li>
+          <li>保存後は即時反映されます</li>
         </ul>
       </div>
     </div>
@@ -1296,8 +1297,8 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
             <div className="mb-6">
               <h2 className="text-lg font-bold mb-1">トップ掲載管理</h2>
               <p className="text-xs text-slate-400">
-                トップページ「人気ランキング」セクションに表示するカードを管理します。
-                スロット 1〜3 にカードを割り当て、一言コメントを設定してください。
+                トップページ「掲載カード一覧」セクションを管理します。スロット 1〜3 にカードを割り当て、一言コメントを設定してください。
+                ※「人気ランキング」セクションは「ランキング管理」タブで管理します。
               </p>
             </div>
             <HomepageFeaturedEditor
