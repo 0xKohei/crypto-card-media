@@ -6,7 +6,6 @@ import { cards } from "@/data/cards";
 import { articles } from "@/data/articles";
 import { comparisons } from "@/data/comparisons";
 import Breadcrumb from "@/components/layout/Breadcrumb";
-import ScoreBar from "@/components/common/ScoreBar";
 import { topPickLabels, topPickIcons } from "@/lib/utils";
 import {
   Trophy,
@@ -14,7 +13,8 @@ import {
   ExternalLink,
   GitCompare,
   BookOpen,
-  AlertCircle,
+  Info,
+  ChevronRight,
 } from "lucide-react";
 
 export async function generateStaticParams() {
@@ -34,6 +34,12 @@ export async function generateMetadata({
   };
 }
 
+const rankStyle: Record<number, { wrap: string; badge: string; badgeText: string }> = {
+  1: { wrap: "border-amber-300 shadow-amber-100", badge: "bg-amber-400 text-amber-900", badgeText: "" },
+  2: { wrap: "border-slate-300", badge: "bg-slate-300 text-slate-700", badgeText: "" },
+  3: { wrap: "border-amber-200", badge: "bg-amber-200 text-amber-800", badgeText: "" },
+};
+
 export default function TopPickDetailPage({ params }: { params: { slug: string } }) {
   const tp = getTopPickBySlug(params.slug);
   if (!tp) notFound();
@@ -41,7 +47,6 @@ export default function TopPickDetailPage({ params }: { params: { slug: string }
   const relatedArticles = articles.filter((a) => tp.relatedArticleSlugs.includes(a.slug));
   const relatedComparisons = comparisons.filter((c) => tp.relatedComparisonSlugs.includes(c.slug));
 
-  // JSON-LD for ItemList
   const itemListElements = tp.entries.map((entry) => {
     const card = cards.find((c) => c.slug === entry.cardSlug);
     return {
@@ -77,121 +82,96 @@ export default function TopPickDetailPage({ params }: { params: { slug: string }
 
       {/* Header */}
       <div className="mb-8">
-        <div className="text-4xl mb-4">{topPickIcons[tp.category] ?? "📋"}</div>
-        <h1 className="text-3xl font-bold text-gray-900 mb-3">{tp.title}</h1>
+        <div className="text-4xl mb-3">{topPickIcons[tp.category] ?? "📋"}</div>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 mb-3">{tp.title}</h1>
         <p className="text-gray-600 leading-relaxed mb-4">{tp.description}</p>
 
-        <div className="flex gap-2 items-start bg-blue-50 border border-blue-200 rounded-xl p-4 text-sm text-blue-900">
-          <AlertCircle className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
-          <div>
-            <p className="font-semibold mb-1">選定基準</p>
-            <p>{tp.selectionCriteria}</p>
-            <p className="mt-1 text-xs text-blue-700">{tp.scoringMethod}</p>
-          </div>
+        <div className="flex items-center gap-2 text-xs text-gray-400 bg-gray-50 border border-gray-100 rounded-xl px-4 py-2.5">
+          <Info className="w-3.5 h-3.5 shrink-0 text-gray-400" />
+          {tp.rankingNote}
         </div>
       </div>
 
       {/* Ranking entries */}
-      <div className="space-y-6 mb-12">
+      <div className="space-y-5 mb-12">
         {tp.entries.map((entry) => {
           const card = cards.find((c) => c.slug === entry.cardSlug);
           if (!card) return null;
+          const style = rankStyle[entry.rank] ?? { wrap: "border-gray-200", badge: "bg-gray-100 text-gray-600", badgeText: "" };
 
           return (
             <div
               key={entry.rank}
-              className={`bg-white border-2 rounded-2xl overflow-hidden transition-all ${
-                entry.rank === 1
-                  ? "border-amber-300 shadow-md shadow-amber-100"
-                  : "border-gray-200"
-              }`}
+              className={`bg-white border-2 rounded-2xl overflow-hidden transition-all hover:shadow-md ${style.wrap}`}
             >
-              {/* Rank badge */}
-              <div className={`px-5 py-3 flex items-center gap-4 ${
-                entry.rank === 1 ? "bg-amber-50" : "bg-gray-50"
-              }`}>
-                <div className={`w-10 h-10 rounded-xl flex items-center justify-center text-lg font-bold flex-shrink-0 ${
-                  entry.rank === 1 ? "bg-amber-400 text-amber-900"
-                  : entry.rank === 2 ? "bg-gray-300 text-gray-700"
-                  : entry.rank === 3 ? "bg-amber-100 text-amber-700"
-                  : "bg-gray-100 text-gray-600"
-                }`}>
+              {/* Rank header */}
+              <div className={`px-5 py-3 flex items-center gap-3 ${entry.rank === 1 ? "bg-amber-50" : "bg-gray-50"}`}>
+                <div className={`w-9 h-9 rounded-xl flex items-center justify-center text-sm font-bold flex-shrink-0 ${style.badge}`}>
                   {entry.rank}
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2 flex-wrap">
-                    <span className="font-bold text-gray-900">{card.name}</span>
-                    {entry.rank === 1 && (
-                      <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">
-                        <Trophy className="w-3 h-3" />
-                        1位
-                      </span>
-                    )}
-                    {card.isEditorsPick && (
-                      <span className="text-xs text-yellow-700 bg-yellow-100 px-2 py-0.5 rounded-full font-medium">
-                        ★ 編集部イチオシ
-                      </span>
-                    )}
-                    {card.isSponsor && (
-                      <span className="text-xs text-gray-500 bg-gray-100 px-2 py-0.5 rounded-full">PR</span>
-                    )}
-                  </div>
-                  {entry.highlightScore !== undefined && entry.highlightLabel && (
-                    <p className="text-xs text-gray-500 mt-0.5">
-                      {entry.highlightLabel}：<span className="font-semibold text-gray-700">{entry.highlightScore}</span> / 10
-                    </p>
+                <div className="flex items-center gap-2 flex-wrap flex-1">
+                  <span className="font-bold text-gray-900">{card.name}</span>
+                  {entry.rank === 1 && (
+                    <span className="flex items-center gap-1 text-xs text-amber-700 bg-amber-100 px-2 py-0.5 rounded-full font-medium">
+                      <Trophy className="w-3 h-3" />
+                      1位
+                    </span>
+                  )}
+                  {entry.keyStrength && (
+                    <span className="text-xs bg-blue-50 text-blue-700 border border-blue-100 px-2 py-0.5 rounded-full">
+                      {entry.keyStrength}
+                    </span>
+                  )}
+                  {card.isSponsor && (
+                    <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">PR</span>
                   )}
                 </div>
               </div>
 
               <div className="p-5">
-                <div className="flex gap-5">
-                  {/* Card visual */}
-                  <div className={`w-16 h-16 bg-gradient-to-br ${card.coverColor} rounded-xl flex items-center justify-center text-3xl flex-shrink-0`}>
+                <div className="flex gap-4">
+                  {/* Card logo */}
+                  <div className={`w-14 h-14 bg-gradient-to-br ${card.coverColor} rounded-xl flex items-center justify-center text-2xl flex-shrink-0`}>
                     {card.logo}
                   </div>
 
                   {/* Content */}
-                  <div className="flex-1">
-                    <p className="text-sm text-gray-700 leading-relaxed mb-3">
-                      <span className="font-semibold text-gray-900">選ばれた理由：</span>
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm text-gray-700 leading-relaxed mb-4">
                       {entry.reason}
                     </p>
 
-                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-3">
+                    {/* 4 key specs */}
+                    <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 mb-4">
                       {[
-                        { label: "FX手数料", value: card.fxFee },
+                        { label: "FX手数料", value: card.fxFee.split("、")[0].split("（")[0] },
                         { label: "還元率", value: card.cashbackRate },
+                        { label: "日本対応", value: card.regionAvailability.includes("global") || card.regionAvailability.includes("asia") ? "申込可能性あり" : "要確認" },
                         { label: "Apple Pay", value: card.applePay ? "対応" : "非対応" },
-                        { label: "総合スコア", value: `${card.scores.overall}/10` },
                       ].map((stat) => (
-                        <div key={stat.label} className="bg-gray-50 rounded-lg p-2">
-                          <p className="text-xs text-gray-500">{stat.label}</p>
+                        <div key={stat.label} className="bg-gray-50 rounded-lg p-2.5">
+                          <p className="text-xs text-gray-400 mb-0.5">{stat.label}</p>
                           <p className="text-xs font-semibold text-gray-900 truncate">{stat.value}</p>
                         </div>
                       ))}
                     </div>
 
-                    {/* Score bar for the highlight category */}
-                    <div className="mb-3">
-                      <ScoreBar label="総合スコア" score={card.scores.overall} size="sm" />
-                    </div>
-
-                    <div className="flex flex-wrap gap-2 items-center">
+                    {/* Action buttons */}
+                    <div className="flex flex-wrap gap-2">
                       <Link
                         href={`/cards/${card.slug}`}
-                        className="text-sm text-blue-600 hover:underline font-medium"
+                        className="flex items-center gap-1 text-sm text-blue-600 hover:text-blue-800 font-medium"
                       >
-                        詳細を見る →
+                        詳細を見る <ChevronRight className="w-3.5 h-3.5" />
                       </Link>
                       {card.referralUrl && (
                         <a
                           href={card.referralUrl}
                           target="_blank"
                           rel="noopener noreferrer sponsored"
-                          className="flex items-center gap-1.5 bg-blue-600 text-white text-xs font-medium px-3 py-1.5 rounded-lg hover:bg-blue-700 transition-colors"
+                          className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-4 py-1.5 rounded-lg transition-colors"
                         >
-                          公式サイト
+                          公式サイトで詳細を見る
                           <ExternalLink className="w-3 h-3" />
                         </a>
                       )}
@@ -201,10 +181,10 @@ export default function TopPickDetailPage({ params }: { params: { slug: string }
 
                 {/* Pros */}
                 <div className="mt-4 border-t border-gray-100 pt-4">
-                  <p className="text-xs font-semibold text-gray-500 mb-2">主な長所</p>
+                  <p className="text-xs font-semibold text-gray-400 mb-2 uppercase tracking-wide">主な特徴</p>
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-1.5">
                     {card.pros.slice(0, 4).map((pro) => (
-                      <div key={pro} className="flex items-start gap-2 text-xs text-gray-700">
+                      <div key={pro} className="flex items-start gap-1.5 text-xs text-gray-700">
                         <CheckCircle className="w-3.5 h-3.5 text-emerald-500 flex-shrink-0 mt-0.5" />
                         {pro}
                       </div>
@@ -215,6 +195,13 @@ export default function TopPickDetailPage({ params }: { params: { slug: string }
             </div>
           );
         })}
+      </div>
+
+      {/* Affiliate disclosure */}
+      <div className="mb-10 bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-xs text-gray-500">
+        ※ 一部リンクにはアフィリエイト（紹介報酬）が含まれる場合があります。詳細は
+        <Link href="/disclaimer" className="text-blue-600 hover:underline mx-1">免責事項</Link>
+        をご覧ください。
       </div>
 
       {/* Related comparisons */}
@@ -270,7 +257,7 @@ export default function TopPickDetailPage({ params }: { params: { slug: string }
               <Link
                 key={other.slug}
                 href={`/top-picks/${other.slug}`}
-                className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-center hover:border-blue-300 hover:bg-blue-50 transition-colors"
+                className="bg-gray-50 border border-gray-200 rounded-xl p-3 text-center hover:border-blue-200 hover:bg-blue-50 transition-colors"
               >
                 <div className="text-2xl mb-1">{topPickIcons[other.category]}</div>
                 <p className="text-xs font-medium text-gray-700 leading-snug">

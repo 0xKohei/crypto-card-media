@@ -30,18 +30,6 @@ export type AvailabilityStatus = "available" | "waitlist" | "coming-soon" | "reg
 
 export type RewardType = "cashback-fiat" | "cashback-crypto" | "points" | "apy" | "none";
 
-export interface CardScore {
-  overall: number;           // 0-10
-  beginnerFriendly: number;  // 0-10
-  japanCompatibility: number;// 0-10
-  cashback: number;          // 0-10
-  fees: number;              // 0-10 (高いほど手数料が低い)
-  accessibility: number;     // 0-10
-  usdtUsability: number;     // 0-10
-  withdrawal: number;        // 0-10
-  security: number;          // 0-10
-}
-
 export interface CardFAQ {
   question: string;
   answer: string;
@@ -52,7 +40,7 @@ export interface Card {
   name: string;
   slug: string;
   logo: string;            // emoji or path
-  coverColor: string;      // Tailwind bg color class
+  coverColor: string;      // Tailwind gradient classes
   shortDescription: string;
   longDescription: string;
   issuer: string;
@@ -99,24 +87,26 @@ export interface Card {
   availabilityStatus: AvailabilityStatus;
   waitlist: boolean;
   appRating?: string;
-  scores: CardScore;
   bestFor: string[];
   useCases: string[];
   pros: string[];
   cons: string[];
   faq: CardFAQ[];
-  relatedGuides: string[];     // guide slugs
-  relatedComparisons: string[];// comparison slugs
-  relatedTopPicks: string[];   // top-picks slugs
+  relatedGuides: string[];
+  relatedComparisons: string[];
+  relatedTopPicks: string[];
   tags: string[];
   officialUrl: string;
   referralUrl?: string;
   isEditorsPick: boolean;
   isFeatured: boolean;
   isSponsor: boolean;
-  lastReviewed: string;        // ISO date
-  lastUpdated: string;         // ISO date
-  reviewNote?: string;         // 調査メモ
+  isPriority: boolean;        // 優先掲載カード（リファラルあり）
+  priorityRank?: number;      // 優先表示順（1〜6）
+  keyStrength?: string;       // ランキング表示用の強みワード（例：「出金に強い」）
+  lastReviewed: string;
+  lastUpdated: string;
+  reviewNote?: string;
 }
 
 // ============================================================
@@ -139,7 +129,7 @@ export interface Article {
   slug: string;
   title: string;
   excerpt: string;
-  content: string;           // Markdown or HTML
+  content: string;
   category: ArticleCategory;
   tags: string[];
   relatedCardSlugs: string[];
@@ -149,7 +139,7 @@ export interface Article {
   publishedAt: string;
   updatedAt: string;
   author: string;
-  readingTime: number;       // 分
+  readingTime: number;
   featured: boolean;
 }
 
@@ -172,8 +162,7 @@ export interface TopPickEntry {
   rank: number;
   cardSlug: string;
   reason: string;
-  highlightScore?: number;
-  highlightLabel?: string;
+  keyStrength?: string;       // 1〜3位の強みワード
 }
 
 export interface TopPick {
@@ -182,8 +171,7 @@ export interface TopPick {
   category: TopPickCategory;
   title: string;
   description: string;
-  selectionCriteria: string;
-  scoringMethod: string;
+  rankingNote: string;         // 「当サイト内での注目度・掲載状況をもとに表示」など
   entries: TopPickEntry[];
   relatedArticleSlugs: string[];
   relatedComparisonSlugs: string[];
@@ -194,10 +182,10 @@ export interface TopPick {
 // 比較ページ
 // ============================================================
 export interface ComparisonMeta {
-  slug: string;             // e.g. "tria-vs-gomining"
+  slug: string;
   title: string;
   description: string;
-  cardSlugs: string[];      // 2〜4枚
+  cardSlugs: string[];
   relatedArticleSlugs: string[];
   updatedAt: string;
 }

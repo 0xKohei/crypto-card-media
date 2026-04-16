@@ -96,15 +96,7 @@ export default function CompareDetailPage({ params }: { params: { slug: string }
     ? comp.title
     : `${compCards.map((c) => c.name).join(" vs ")} 比較`;
 
-  const compareRows = [
-    { label: "総合スコア", key: "score" },
-    { label: "初心者向き", key: "beginnerFriendly" },
-    { label: "日本適性", key: "japanCompatibility" },
-    { label: "還元率", key: "cashback" },
-    { label: "手数料の低さ", key: "fees" },
-    { label: "出金性", key: "withdrawal" },
-    { label: "セキュリティ", key: "security" },
-  ];
+  // スコア比較は廃止。スペック比較のみ。
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -151,28 +143,6 @@ export default function CompareDetailPage({ params }: { params: { slug: string }
             </tr>
           </thead>
           <tbody>
-            {/* Scores */}
-            <tr className="bg-blue-50">
-              <td className="py-2.5 px-4 text-xs font-bold text-blue-700 uppercase tracking-wide" colSpan={compCards.length + 1}>
-                スコア比較
-              </td>
-            </tr>
-            {compareRows.map((row) => (
-              <tr key={row.key} className="hover:bg-gray-50">
-                <td className="py-3 px-4 text-sm font-medium text-gray-600 border-b border-gray-100">{row.label}</td>
-                {compCards.map((card) => {
-                  const score = row.key === "score" ? card.scores.overall
-                    : row.key === "beginnerFriendly" ? card.scores.beginnerFriendly
-                    : row.key === "japanCompatibility" ? card.scores.japanCompatibility
-                    : row.key === "cashback" ? card.scores.cashback
-                    : row.key === "fees" ? card.scores.fees
-                    : row.key === "withdrawal" ? card.scores.withdrawal
-                    : card.scores.security;
-                  return <ScoreCell key={card.id} score={score} />;
-                })}
-              </tr>
-            ))}
-
             {/* Details */}
             <tr className="bg-slate-50">
               <td className="py-2.5 px-4 text-xs font-bold text-slate-600 uppercase tracking-wide" colSpan={compCards.length + 1}>

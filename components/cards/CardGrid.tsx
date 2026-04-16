@@ -1,7 +1,6 @@
 import Link from "next/link";
 import type { Card } from "@/types";
-import Badge from "@/components/common/Badge";
-import { CheckCircle, XCircle, Globe, CreditCard } from "lucide-react";
+import { CheckCircle, XCircle, Globe, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 interface CardGridProps {
@@ -27,89 +26,106 @@ export default function CardGrid({ cards, columns = 3 }: CardGridProps) {
 
 export function CardGridItem({ card }: { card: Card }) {
   return (
-    <Link
-      href={`/cards/${card.slug}`}
-      className="group block bg-white rounded-2xl border border-gray-200 hover:border-blue-300 hover:shadow-md transition-all duration-200 overflow-hidden"
-    >
+    <div className="group bg-white rounded-2xl border border-gray-200 hover:border-blue-200 hover:shadow-md transition-all duration-200 overflow-hidden">
       {/* Card header */}
-      <div className={cn("h-24 bg-gradient-to-br flex items-center justify-center relative", card.coverColor)}>
-        <span className="text-4xl">{card.logo}</span>
-        <div className="absolute top-3 right-3 flex flex-col gap-1 items-end">
-          {card.isEditorsPick && (
-            <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2 py-0.5 rounded-full">
-              編集部イチオシ
-            </span>
-          )}
+      <div className={cn("h-24 bg-gradient-to-br flex items-center justify-between px-5 relative", card.coverColor)}>
+        <div className="flex items-center gap-3">
+          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl">
+            {card.logo}
+          </div>
+          <div>
+            <h3 className="font-bold text-white leading-tight">{card.name}</h3>
+            <p className="text-white/70 text-xs">{card.network}</p>
+          </div>
+        </div>
+        <div className="flex flex-col gap-1 items-end">
           {card.isSponsor && (
             <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full backdrop-blur-sm">
               PR
             </span>
           )}
-        </div>
-        {/* Score badge */}
-        <div className="absolute bottom-3 left-3">
-          <span className="bg-white/90 backdrop-blur-sm text-slate-900 text-xs font-bold px-2 py-1 rounded-lg">
-            {card.scores.overall} / 10
-          </span>
+          {card.keyStrength && (
+            <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/20">
+              {card.keyStrength}
+            </span>
+          )}
         </div>
       </div>
 
       {/* Card body */}
       <div className="p-4">
-        <div className="flex items-start justify-between gap-2 mb-2">
-          <h3 className="font-bold text-gray-900 group-hover:text-blue-600 transition-colors leading-tight">
-            {card.name}
-          </h3>
-          <span className="text-xs text-gray-500 shrink-0">{card.network}</span>
-        </div>
-
-        <p className="text-xs text-gray-600 leading-relaxed mb-3 line-clamp-2">
+        <p className="text-xs text-gray-600 leading-relaxed mb-4 line-clamp-2">
           {card.shortDescription}
         </p>
 
-        {/* Key stats */}
-        <div className="grid grid-cols-2 gap-2 mb-3">
-          <div className="bg-gray-50 rounded-lg p-2">
-            <p className="text-xs text-gray-500">FX手数料</p>
-            <p className="text-xs font-semibold text-gray-900 truncate">{card.fxFee}</p>
+        {/* Key specs: 必須4項目 */}
+        <div className="grid grid-cols-2 gap-2 mb-4">
+          <div className="bg-gray-50 rounded-lg p-2.5">
+            <p className="text-xs text-gray-400 mb-0.5">FX手数料</p>
+            <p className="text-xs font-semibold text-gray-900 truncate">
+              {card.fxFee.split("、")[0].split("（")[0]}
+            </p>
           </div>
-          <div className="bg-gray-50 rounded-lg p-2">
-            <p className="text-xs text-gray-500">還元率</p>
+          <div className="bg-gray-50 rounded-lg p-2.5">
+            <p className="text-xs text-gray-400 mb-0.5">還元率</p>
             <p className="text-xs font-semibold text-gray-900 truncate">{card.cashbackRate}</p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-2.5">
+            <p className="text-xs text-gray-400 mb-0.5">ATM利用</p>
+            <p className="text-xs font-semibold text-gray-900 truncate">
+              {card.physicalCard ? "利用可" : "バーチャルのみ"}
+            </p>
+          </div>
+          <div className="bg-gray-50 rounded-lg p-2.5">
+            <p className="text-xs text-gray-400 mb-0.5">日本対応</p>
+            <p className="text-xs font-semibold text-gray-900 truncate">
+              {card.regionAvailability.includes("global") || card.regionAvailability.includes("asia")
+                ? "申込可能性あり"
+                : "要確認"}
+            </p>
           </div>
         </div>
 
         {/* Feature flags */}
-        <div className="flex flex-wrap gap-1.5 mb-3">
+        <div className="flex flex-wrap gap-2 mb-4">
           <FeatureFlag enabled={card.applePay} label="Apple Pay" />
           <FeatureFlag enabled={card.virtualCard} label="バーチャル" />
           <FeatureFlag enabled={card.physicalCard} label="物理カード" />
-          <FeatureFlag enabled={card.stablecoinSupport} label="USDT対応" />
+          <FeatureFlag enabled={card.stablecoinSupport} label="USDT/USDC" />
         </div>
 
-        {/* Tags */}
-        <div className="flex flex-wrap gap-1">
-          {card.tags.slice(0, 3).map((tag) => (
-            <Badge key={tag} variant="blue" size="sm">
-              {tag}
-            </Badge>
-          ))}
+        {/* CTA buttons */}
+        <div className="flex gap-2">
+          <Link
+            href={`/cards/${card.slug}`}
+            className="flex-1 text-center text-sm font-medium text-gray-700 border border-gray-200 py-2 rounded-lg hover:bg-gray-50 transition-colors"
+          >
+            詳細を見る
+          </Link>
+          {card.referralUrl && (
+            <a
+              href={card.referralUrl}
+              target="_blank"
+              rel="noopener noreferrer sponsored"
+              className="flex-1 flex items-center justify-center gap-1.5 text-sm font-bold text-white bg-blue-600 hover:bg-blue-700 py-2 rounded-lg transition-colors"
+            >
+              公式サイト
+              <ExternalLink className="w-3 h-3" />
+            </a>
+          )}
         </div>
       </div>
 
       {/* Footer */}
-      <div className="px-4 py-3 bg-gray-50 border-t border-gray-100">
-        <div className="flex items-center justify-between">
-          <span className="text-xs text-gray-500 flex items-center gap-1">
-            <Globe className="w-3 h-3" />
-            {card.regionAvailability.includes("global") ? "グローバル" : card.regionAvailability.slice(0, 2).join(" / ")}
-          </span>
-          <span className="text-xs font-medium text-blue-600">
-            詳細を見る →
-          </span>
-        </div>
+      <div className="px-4 py-2.5 bg-gray-50 border-t border-gray-100">
+        <span className="text-xs text-gray-400 flex items-center gap-1">
+          <Globe className="w-3 h-3" />
+          {card.regionAvailability.includes("global")
+            ? "グローバル対応"
+            : card.regionAvailability.slice(0, 2).join(" / ")}
+        </span>
       </div>
-    </Link>
+    </div>
   );
 }
 
@@ -118,7 +134,7 @@ function FeatureFlag({ enabled, label }: { enabled: boolean; label: string }) {
     <span
       className={cn(
         "flex items-center gap-0.5 text-xs",
-        enabled ? "text-emerald-600" : "text-gray-400"
+        enabled ? "text-emerald-600" : "text-gray-300"
       )}
     >
       {enabled ? (

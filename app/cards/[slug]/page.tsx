@@ -6,7 +6,6 @@ import { getRelatedArticlesForCard } from "@/data/articles";
 import { getComparisonsForCard } from "@/data/comparisons";
 import { topPicks } from "@/data/top-picks";
 import Breadcrumb from "@/components/layout/Breadcrumb";
-import ScoreBar from "@/components/common/ScoreBar";
 import Badge from "@/components/common/Badge";
 import FAQ from "@/components/common/FAQ";
 import ArticleCard from "@/components/articles/ArticleCard";
@@ -17,7 +16,6 @@ import {
   topPickLabels,
   topPickIcons,
   formatDate,
-  scoreToBgColor,
 } from "@/lib/utils";
 import {
   CheckCircle,
@@ -26,7 +24,9 @@ import {
   GitCompare,
   Trophy,
   BookOpen,
-  AlertCircle,
+  Info,
+  Globe,
+  Calendar,
 } from "lucide-react";
 
 export async function generateStaticParams() {
@@ -42,8 +42,8 @@ export async function generateMetadata({
   if (!card) return {};
 
   return {
-    title: `${card.name}の評判・手数料・特徴を解説`,
-    description: `${card.name}の総合スコア${card.scores.overall}/10。${card.shortDescription}FX手数料：${card.fxFee}、還元率：${card.cashbackRate}。詳細な比較情報をまとめました。`,
+    title: `${card.name} | 手数料・還元率・特徴を解説`,
+    description: `${card.shortDescription} FX手数料：${card.fxFee.split("、")[0]}、還元率：${card.cashbackRate}。最新情報を解説。`,
   };
 }
 
@@ -75,13 +75,7 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
             "@type": "Product",
             name: card.name,
             description: card.shortDescription,
-            aggregateRating: {
-              "@type": "AggregateRating",
-              ratingValue: card.scores.overall,
-              bestRating: 10,
-              worstRating: 0,
-              reviewCount: 1,
-            },
+            url: card.officialUrl,
           }),
         }}
       />
@@ -90,110 +84,65 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
         {/* Main content */}
         <div className="lg:col-span-2">
           {/* Card header */}
-          <div className={`bg-gradient-to-br ${card.coverColor} rounded-2xl p-8 text-white mb-8`}>
-            <div className="flex items-start gap-6">
-              <div className="w-20 h-20 bg-white/20 rounded-2xl flex items-center justify-center text-4xl flex-shrink-0">
+          <div className={`bg-gradient-to-br ${card.coverColor} rounded-2xl p-6 sm:p-8 text-white mb-6`}>
+            <div className="flex items-start gap-5">
+              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">
                 {card.logo}
               </div>
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                  {card.isEditorsPick && (
-                    <span className="bg-yellow-400 text-yellow-900 text-xs font-bold px-2.5 py-1 rounded-full">
-                      ★ 編集部イチオシ
-                    </span>
-                  )}
                   {card.isSponsor && (
                     <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">PR</span>
+                  )}
+                  {card.keyStrength && (
+                    <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full border border-white/30">
+                      {card.keyStrength}
+                    </span>
                   )}
                   <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">
                     {card.network}
                   </span>
                 </div>
-                <h1 className="text-3xl font-bold mb-1">{card.name}</h1>
-                <p className="text-white/80 text-sm">{card.issuer} · {card.issuerType}</p>
-              </div>
-              <div className="text-center bg-white/20 rounded-xl p-3">
-                <div className="text-3xl font-bold">{card.scores.overall}</div>
-                <div className="text-xs text-white/70">/ 10</div>
-                <div className="text-xs text-white/80 mt-0.5">総合スコア</div>
+                <h1 className="text-2xl sm:text-3xl font-bold mb-1">{card.name}</h1>
+                <p className="text-white/70 text-sm">{card.provider}</p>
               </div>
             </div>
 
             <p className="mt-4 text-white/90 text-sm leading-relaxed">
               {card.shortDescription}
             </p>
+
+            {/* Quick stats */}
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
+              {[
+                { label: "FX手数料", value: card.fxFee.split("、")[0].split("（")[0] },
+                { label: "還元率", value: card.cashbackRate },
+                { label: "Apple Pay", value: card.applePay ? "対応" : "非対応" },
+                { label: "カストディ", value: card.custodyType === "non-custodial" ? "非カストディ" : "カストディ型" },
+              ].map((stat) => (
+                <div key={stat.label} className="bg-white/10 rounded-xl p-3">
+                  <p className="text-xs text-white/60 mb-0.5">{stat.label}</p>
+                  <p className="font-semibold text-sm text-white">{stat.value}</p>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {/* Alert: Mock data notice */}
-          <div className="flex gap-3 bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-            <AlertCircle className="w-4 h-4 text-amber-600 flex-shrink-0 mt-0.5" />
-            <p className="text-sm text-amber-800">
-              掲載情報は{formatDate(card.lastReviewed)}時点の参考情報です。手数料・対応地域・条件は変更される場合があります。必ず公式サイトで最新情報をご確認ください。
+          {/* Info notice */}
+          <div className="flex gap-3 bg-blue-50 border border-blue-100 rounded-xl p-4 mb-6">
+            <Info className="w-4 h-4 text-blue-500 flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-blue-800">
+              掲載情報は{formatDate(card.lastReviewed)}時点の調査に基づきます。手数料・対応地域・条件は変更される場合があります。必ず公式サイトで最新情報をご確認ください。
             </p>
           </div>
 
-          {/* Long description */}
+          {/* Overview */}
           <section className="mb-8">
             <h2 className="text-xl font-bold text-gray-900 mb-4">{card.name}とは</h2>
             <p className="text-gray-700 leading-relaxed">{card.longDescription}</p>
           </section>
 
-          {/* Score breakdown */}
-          <section className="mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">スコア詳細</h2>
-            <div className="bg-gray-50 rounded-2xl p-6 space-y-3">
-              {[
-                { label: "総合評価", score: card.scores.overall },
-                { label: "初心者向き", score: card.scores.beginnerFriendly },
-                { label: "日本適性", score: card.scores.japanCompatibility },
-                { label: "還元率", score: card.scores.cashback },
-                { label: "手数料の低さ", score: card.scores.fees },
-                { label: "入手しやすさ", score: card.scores.accessibility },
-                { label: "USDT活用度", score: card.scores.usdtUsability },
-                { label: "出金性", score: card.scores.withdrawal },
-                { label: "セキュリティ", score: card.scores.security },
-              ].map((item) => (
-                <ScoreBar key={item.label} label={item.label} score={item.score} />
-              ))}
-            </div>
-          </section>
-
-          {/* Pros / Cons */}
-          <section className="mb-8">
-            <h2 className="text-xl font-bold text-gray-900 mb-4">長所・短所</h2>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
-              <div className="bg-emerald-50 border border-emerald-200 rounded-xl p-5">
-                <h3 className="font-semibold text-emerald-800 mb-3 flex items-center gap-2">
-                  <CheckCircle className="w-4 h-4" />
-                  長所
-                </h3>
-                <ul className="space-y-2">
-                  {card.pros.map((pro) => (
-                    <li key={pro} className="text-sm text-emerald-700 flex items-start gap-2">
-                      <span className="text-emerald-500 mt-0.5">•</span>
-                      {pro}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-              <div className="bg-red-50 border border-red-200 rounded-xl p-5">
-                <h3 className="font-semibold text-red-800 mb-3 flex items-center gap-2">
-                  <XCircle className="w-4 h-4" />
-                  短所
-                </h3>
-                <ul className="space-y-2">
-                  {card.cons.map((con) => (
-                    <li key={con} className="text-sm text-red-700 flex items-start gap-2">
-                      <span className="text-red-400 mt-0.5">•</span>
-                      {con}
-                    </li>
-                  ))}
-                </ul>
-              </div>
-            </div>
-          </section>
-
-          {/* Spec table */}
+          {/* Key specs table */}
           <section className="mb-8">
             <h2 className="text-xl font-bold text-gray-900 mb-4">スペック詳細</h2>
             <div className="border border-gray-200 rounded-2xl overflow-hidden">
@@ -201,6 +150,7 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
                 <tbody>
                   {[
                     { label: "発行会社", value: card.issuer },
+                    { label: "発行体", value: card.provider },
                     { label: "ネットワーク", value: card.network },
                     { label: "カードタイプ", value: card.cardType },
                     { label: "カストディ", value: custodyLabels[card.custodyType] },
@@ -209,23 +159,26 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
                     { label: "バーチャルカード", value: card.virtualCard ? "あり" : "なし" },
                     { label: "Apple Pay", value: card.applePay ? "対応" : "非対応" },
                     { label: "Google Pay", value: card.googlePay ? "対応" : "非対応" },
-                    { label: "FX手数料", value: card.fxFee },
                     { label: "発行手数料", value: card.issuanceFee },
                     { label: "月額手数料", value: card.monthlyFee },
+                    ...(card.annualFee ? [{ label: "年会費", value: card.annualFee }] : []),
+                    { label: "FX手数料", value: card.fxFee },
                     { label: "ATM手数料", value: card.atmFee },
                     { label: "還元率", value: card.cashbackRate },
+                    { label: "還元詳細", value: card.cashbackDetails },
                     { label: "利用上限", value: card.spendingLimit },
+                    ...(card.atmWithdrawalLimit ? [{ label: "ATM上限", value: card.atmWithdrawalLimit }] : []),
                     { label: "チャージ方法", value: card.topupMethods.join("、") },
                     { label: "対応資産", value: card.supportedAssets.join("、") },
                     { label: "対応チェーン", value: card.supportedChains.join("、") },
-                    { label: "ステーブルコイン対応", value: card.stablecoinSupport ? "対応" : "非対応" },
-                    { label: "対応地域", value: card.regionAvailability.map((r) => regionLabels[r]).join("、") },
+                    { label: "対応地域", value: card.regionAvailability.map((r) => regionLabels[r] ?? r).join("、") },
+                    { label: "ステーブルコイン", value: card.stablecoinSupport ? "対応" : "非対応" },
                   ].map((row, i) => (
                     <tr key={row.label} className={i % 2 === 0 ? "bg-white" : "bg-gray-50"}>
-                      <td className="py-2.5 px-4 font-medium text-gray-600 w-36 border-b border-gray-100">
+                      <td className="py-2.5 px-4 font-medium text-gray-500 w-36 border-b border-gray-100 text-xs">
                         {row.label}
                       </td>
-                      <td className="py-2.5 px-4 text-gray-900 border-b border-gray-100">
+                      <td className="py-2.5 px-4 text-gray-900 border-b border-gray-100 text-sm">
                         {row.value}
                       </td>
                     </tr>
@@ -235,7 +188,42 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
             </div>
           </section>
 
-          {/* Best for */}
+          {/* Pros / Cons */}
+          <section className="mb-8">
+            <h2 className="text-xl font-bold text-gray-900 mb-4">長所・短所</h2>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
+              <div className="bg-emerald-50 border border-emerald-100 rounded-xl p-5">
+                <h3 className="font-semibold text-emerald-800 mb-3 flex items-center gap-2 text-sm">
+                  <CheckCircle className="w-4 h-4" />
+                  長所
+                </h3>
+                <ul className="space-y-2">
+                  {card.pros.map((pro) => (
+                    <li key={pro} className="text-sm text-emerald-700 flex items-start gap-2">
+                      <span className="text-emerald-400 mt-0.5 shrink-0">•</span>
+                      {pro}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+              <div className="bg-red-50 border border-red-100 rounded-xl p-5">
+                <h3 className="font-semibold text-red-800 mb-3 flex items-center gap-2 text-sm">
+                  <XCircle className="w-4 h-4" />
+                  短所・注意点
+                </h3>
+                <ul className="space-y-2">
+                  {card.cons.map((con) => (
+                    <li key={con} className="text-sm text-red-700 flex items-start gap-2">
+                      <span className="text-red-400 mt-0.5 shrink-0">•</span>
+                      {con}
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            </div>
+          </section>
+
+          {/* Use cases */}
           <section className="mb-8">
             <h2 className="text-xl font-bold text-gray-900 mb-4">こんな方に向いています</h2>
             <div className="space-y-2">
@@ -249,29 +237,37 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
           </section>
 
           {/* FAQ */}
-          {card.faq.length > 0 && <FAQ items={card.faq} title={`${card.name}に関するよくある質問`} />}
+          {card.faq.length > 0 && (
+            <FAQ items={card.faq} title={`${card.name}に関するよくある質問`} />
+          )}
+
+          {/* Last updated */}
+          <div className="mt-6 flex items-center gap-2 text-xs text-gray-400">
+            <Calendar className="w-3.5 h-3.5" />
+            <span>最終更新：{formatDate(card.lastUpdated)}</span>
+          </div>
         </div>
 
         {/* Sidebar */}
         <div className="mt-8 lg:mt-0 space-y-6">
-          {/* CTA */}
-          <div className="bg-white border-2 border-blue-200 rounded-2xl p-6 sticky top-24">
+          {/* Main CTA */}
+          <div className="bg-white border-2 border-blue-100 rounded-2xl p-6 sticky top-24">
             <div className={`h-16 bg-gradient-to-br ${card.coverColor} rounded-xl flex items-center justify-center text-3xl mb-4`}>
               {card.logo}
             </div>
             <h3 className="font-bold text-gray-900 text-lg mb-1">{card.name}</h3>
-            <div className={`inline-flex px-2.5 py-1 rounded-full text-xs font-semibold mb-4 ${scoreToBgColor(card.scores.overall)}`}>
-              総合スコア {card.scores.overall} / 10
-            </div>
+            {card.keyStrength && (
+              <p className="text-sm text-blue-600 font-medium mb-4">{card.keyStrength}</p>
+            )}
 
             {card.referralUrl && (
               <a
                 href={card.referralUrl}
                 target="_blank"
                 rel="noopener noreferrer sponsored"
-                className="w-full flex items-center justify-center gap-2 bg-blue-600 text-white font-bold py-3 px-4 rounded-xl hover:bg-blue-700 transition-colors mb-3"
+                className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition-colors mb-3 shadow-sm shadow-blue-200"
               >
-                公式サイトを見る
+                公式サイトで詳細を見る
                 <ExternalLink className="w-4 h-4" />
               </a>
             )}
@@ -279,9 +275,10 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
               href={card.officialUrl}
               target="_blank"
               rel="noopener noreferrer"
-              className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-700 font-medium py-2.5 px-4 rounded-xl hover:bg-gray-50 transition-colors text-sm"
+              className="w-full flex items-center justify-center gap-2 border border-gray-200 text-gray-600 font-medium py-2.5 px-4 rounded-xl hover:bg-gray-50 transition-colors text-sm"
             >
-              公式情報を確認する
+              <Globe className="w-3.5 h-3.5" />
+              公式サイトを確認する
             </a>
 
             <p className="text-xs text-gray-400 mt-3 text-center leading-relaxed">
@@ -292,7 +289,7 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
           {/* Related comparisons */}
           {relatedComparisons.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-2xl p-5">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2 text-sm">
                 <GitCompare className="w-4 h-4 text-violet-500" />
                 比較ページ
               </h3>
@@ -307,19 +304,13 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
                   </Link>
                 ))}
               </div>
-              <Link
-                href="/compare"
-                className="mt-3 block text-xs text-center text-gray-500 hover:text-blue-600"
-              >
-                自分でカードを選んで比較する →
-              </Link>
             </div>
           )}
 
           {/* Related top picks */}
           {relatedTopPicksList.length > 0 && (
             <div className="bg-white border border-gray-200 rounded-2xl p-5">
-              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2">
+              <h3 className="font-bold text-gray-900 mb-4 flex items-center gap-2 text-sm">
                 <Trophy className="w-4 h-4 text-amber-500" />
                 掲載ランキング
               </h3>
@@ -330,13 +321,13 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
                     <Link
                       key={tp.slug}
                       href={`/top-picks/${tp.slug}`}
-                      className="flex items-center justify-between text-sm hover:bg-gray-50 rounded-lg p-2 -mx-2"
+                      className="flex items-center justify-between text-sm hover:bg-gray-50 rounded-lg p-2 -mx-2 transition-colors"
                     >
                       <span className="text-gray-700">
                         {topPickIcons[tp.category]} {topPickLabels[tp.category]}
                       </span>
                       {entry && (
-                        <span className="font-bold text-amber-600">
+                        <span className="font-bold text-amber-600 text-xs">
                           {entry.rank}位
                         </span>
                       )}
@@ -349,7 +340,7 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
 
           {/* Tags */}
           <div className="bg-white border border-gray-200 rounded-2xl p-5">
-            <h3 className="font-bold text-gray-900 mb-3">タグ</h3>
+            <h3 className="font-bold text-gray-900 mb-3 text-sm">タグ</h3>
             <div className="flex flex-wrap gap-2">
               {card.tags.map((tag) => (
                 <Badge key={tag} variant="blue">{tag}</Badge>
@@ -380,7 +371,6 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
         <div className="flex flex-wrap gap-3">
           {cards
             .filter((c) => c.slug !== card.slug)
-            .slice(0, 6)
             .map((otherCard) => (
               <Link
                 key={otherCard.slug}

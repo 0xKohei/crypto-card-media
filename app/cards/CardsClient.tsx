@@ -10,13 +10,10 @@ interface CardsClientProps {
   initialCards: Card[];
 }
 
-type SortKey = "score" | "cashback" | "fees" | "name" | "japancompat";
+type SortKey = "priority" | "name";
 
 const sortOptions: { key: SortKey; label: string }[] = [
-  { key: "score", label: "総合スコア順" },
-  { key: "cashback", label: "還元率スコア順" },
-  { key: "fees", label: "手数料（低い順）" },
-  { key: "japancompat", label: "日本適性順" },
+  { key: "priority", label: "おすすめ順" },
   { key: "name", label: "名前順" },
 ];
 
@@ -29,7 +26,7 @@ export default function CardsClient({ initialCards }: CardsClientProps) {
   const [hasVirtual, setHasVirtual] = useState(false);
   const [hasCashback, setHasCashback] = useState(false);
   const [stablecoin, setStablecoin] = useState(false);
-  const [sortKey, setSortKey] = useState<SortKey>("score");
+  const [sortKey, setSortKey] = useState<SortKey>("priority");
   const [showFilters, setShowFilters] = useState(false);
 
   const filtered = useMemo(() => {
@@ -46,10 +43,7 @@ export default function CardsClient({ initialCards }: CardsClientProps) {
 
     result.sort((a, b) => {
       switch (sortKey) {
-        case "score": return b.scores.overall - a.scores.overall;
-        case "cashback": return b.scores.cashback - a.scores.cashback;
-        case "fees": return b.scores.fees - a.scores.fees;
-        case "japancompat": return b.scores.japanCompatibility - a.scores.japanCompatibility;
+        case "priority": return (a.priorityRank ?? 99) - (b.priorityRank ?? 99);
         case "name": return a.name.localeCompare(b.name, "ja");
         default: return 0;
       }

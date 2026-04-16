@@ -108,9 +108,9 @@ export default function FinderClient({ initialCards }: FinderClientProps) {
       if (filters.hasVirtual && !card.virtualCard) return false;
       if (filters.hasCashback && card.rewardType === "none") return false;
       if (filters.stablecoin && !card.stablecoinSupport) return false;
-      if (filters.beginnerFriendly && card.scores.beginnerFriendly < 7) return false;
+      if (filters.beginnerFriendly && card.custodyType === "non-custodial") return false;
       if (filters.overseasFriendly && !card.regionAvailability.includes("global") && card.regionAvailability.length < 2) return false;
-      if (filters.withdrawalFocused && card.scores.withdrawal < 7) return false;
+      if (filters.withdrawalFocused && !card.physicalCard) return false;
       return true;
     });
   }, [initialCards, filters]);
@@ -314,11 +314,7 @@ export default function FinderClient({ initialCards }: FinderClientProps) {
             )}
             <div className="grid grid-cols-1 sm:grid-cols-2 xl:grid-cols-3 gap-5">
               {filtered
-                .sort((a, b) => {
-                  if (a.isEditorsPick && !b.isEditorsPick) return -1;
-                  if (!a.isEditorsPick && b.isEditorsPick) return 1;
-                  return b.scores.overall - a.scores.overall;
-                })
+                .sort((a, b) => (a.priorityRank ?? 99) - (b.priorityRank ?? 99))
                 .map((card) => (
                   <CardGridItem key={card.id} card={card} />
                 ))}

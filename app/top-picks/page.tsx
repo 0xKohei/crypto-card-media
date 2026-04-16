@@ -66,13 +66,11 @@ export default function TopPicksPage() {
                         </div>
                         <div className="flex-1 min-w-0">
                           <p className="text-sm font-semibold text-gray-900 truncate">{card.name}</p>
-                          {entry.highlightScore && entry.highlightLabel && (
-                            <p className="text-xs text-gray-500">
-                              {entry.highlightLabel}：{entry.highlightScore}
-                            </p>
+                          {entry.keyStrength && (
+                            <p className="text-xs text-blue-600">{entry.keyStrength}</p>
                           )}
                         </div>
-                        {entry.rank === 1 && card.isEditorsPick && (
+                        {entry.rank === 1 && (
                           <Trophy className="w-4 h-4 text-amber-500 flex-shrink-0" />
                         )}
                       </div>

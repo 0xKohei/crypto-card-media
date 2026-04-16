@@ -5,339 +5,197 @@ export const topPicks: TopPick[] = [
     id: "overall",
     slug: "overall",
     category: "overall",
-    title: "総合おすすめクリプトカード【2026年版】",
+    title: "クリプトカード 総合ランキング【2026年版】",
     description:
-      "手数料・還元率・対応地域・日本ユーザーとの相性・信頼性を総合的に評価したランキングです。",
-    selectionCriteria:
-      "対応地域の広さ、FX手数料の低さ、KYC要件の適切さ、キャッシュバック還元率、日本ユーザーへの対応度、サービスの信頼性を総合的にスコアリングしました。",
-    scoringMethod:
-      "編集部が設定した9項目のスコアを重み付け平均して算出。最終スコアは10点満点。",
+      "当サイトが厳選した6つのクリプトカードを、特徴・対応地域・手数料をもとに掲載しています。",
+    rankingNote: "当サイト内での注目度・掲載状況をもとに表示しています。",
     entries: [
       {
         rank: 1,
         cardSlug: "tria",
         reason:
-          "1,000以上のトークン対応・150カ国以上利用可能・非カストディ・Apple Pay対応と、あらゆる面でバランスが取れた現時点での総合最優秀カード。",
-        highlightScore: 9.2,
-        highlightLabel: "総合スコア",
+          "1,000以上のトークン対応・150カ国以上利用可能・非カストディ・Apple Pay対応。最大6%キャッシュバックを提供するグローバル対応カード。",
+        keyStrength: "マルチトークン対応",
       },
       {
         rank: 2,
-        cardSlug: "gomining-card",
-        reason: "最大5%の高還元と1 THボーナスが魅力。BTC保有者にとって長期的な価値が高い。",
-        highlightScore: 7.8,
-        highlightLabel: "総合スコア",
+        cardSlug: "kast",
+        reason:
+          "USDC決済でFX手数料0%。シーズン制キャッシュバックで最大8%＋$MOVEトークンの追加報酬。ステーブルコイン活用に最適。",
+        keyStrength: "FX手数料0%",
       },
       {
         rank: 3,
-        cardSlug: "etherfi-mexc-card",
-        reason: "非カストディ型でETH保有者に最適。4%還元と10% APRの組み合わせが強力。",
-        highlightScore: 7.8,
-        highlightLabel: "総合スコア",
+        cardSlug: "bitget-wallet-card",
+        reason:
+          "非カストディ型で月$400まで手数料実質無料。KYC完了で5 USDCボーナス。EU・アジア圏に対応。",
+        keyStrength: "非カストディ",
       },
       {
         rank: 4,
-        cardSlug: "zeal-card",
-        reason: "0.3%の超低FX手数料と4%還元のコスパ最強の組み合わせ。EU圏での利用に最適。",
-        highlightScore: 7.6,
-        highlightLabel: "総合スコア",
+        cardSlug: "jupiter-global",
+        reason:
+          "SolanaベースのDEX発行カード。USD取引0%・最大4%キャッシュバック予定。紹介で双方$100の強力プログラム。",
+        keyStrength: "USD取引0%",
       },
       {
         rank: 5,
-        cardSlug: "swissborg-card",
-        reason: "スイス拠点の高信頼性と最大90%還元。$BORG保有者には特に有利。",
-        highlightScore: 7.5,
-        highlightLabel: "総合スコア",
+        cardSlug: "tevau",
+        reason:
+          "180カ国以上・26万ユーザー超の実績あるグローバルカード。ウォレット・Earn・レンディングを統合したマネーアプリ。",
+        keyStrength: "180カ国対応",
+      },
+      {
+        rank: 6,
+        cardSlug: "redotpay",
+        reason:
+          "バーチャルカード$10から発行できるシンプルな設計。シンプルなクリプト決済を始めたい方向け。",
+        keyStrength: "低コスト発行",
       },
     ],
     relatedArticleSlugs: ["how-to-choose-crypto-card", "what-is-crypto-card"],
-    relatedComparisonSlugs: ["tria-vs-gomining", "tria-vs-swissborg"],
-    updatedAt: "2026-04-01",
-  },
-  {
-    id: "high-cashback",
-    slug: "high-cashback",
-    category: "high-cashback",
-    title: "高還元クリプトカードランキング【キャッシュバック最大化】",
-    description:
-      "キャッシュバック率・APY・還元の実現しやすさを重視してランキング化しました。",
-    selectionCriteria:
-      "最大還元率だけでなく、通常利用での現実的な還元率、還元形式の安定性、条件の達成しやすさを総合評価。",
-    scoringMethod:
-      "キャッシュバックスコア（10点満点）を主軸に、条件の達成難易度を加味して算出。",
-    entries: [
-      {
-        rank: 1,
-        cardSlug: "gomining-card",
-        reason: "最大5%のBTCキャッシュバック。VIPティアが現実的に達成可能な設計。",
-        highlightScore: 9.0,
-        highlightLabel: "還元スコア",
-      },
-      {
-        rank: 2,
-        cardSlug: "swissborg-card",
-        reason: "最大90%還元（$BORG形式）。$BORG大量保有者には圧倒的な優位性。",
-        highlightScore: 8.5,
-        highlightLabel: "還元スコア",
-      },
-      {
-        rank: 3,
-        cardSlug: "picnic-card",
-        reason: "最大5%キャッシュバック＋0.3%の低FX手数料。コスパ重視の最上位候補。",
-        highlightScore: 8.5,
-        highlightLabel: "還元スコア",
-      },
-      {
-        rank: 4,
-        cardSlug: "tria",
-        reason: "最大4%還元＋1,000以上のトークン対応でトータル価値は最高水準。",
-        highlightScore: 8.5,
-        highlightLabel: "還元スコア",
-      },
-      {
-        rank: 5,
-        cardSlug: "zeal-card",
-        reason: "4%還元＋5〜6% APYで複合的な利回りを最大化できる。",
-        highlightScore: 8.0,
-        highlightLabel: "還元スコア",
-      },
-    ],
-    relatedArticleSlugs: ["what-is-cashback-in-crypto", "how-to-choose-crypto-card"],
-    relatedComparisonSlugs: ["gomining-vs-swissborg", "tria-vs-gomining"],
-    updatedAt: "2026-04-01",
-  },
-  {
-    id: "overseas",
-    slug: "overseas",
-    category: "overseas",
-    title: "海外利用向けクリプトカードランキング",
-    description:
-      "対応国数・FX手数料・ATM利便性・現地での使いやすさを重視した海外利用特化ランキングです。",
-    selectionCriteria:
-      "対応国数の多さ、海外でのATM利便性、FX手数料の低さ、現地での使いやすさを評価。",
-    scoringMethod: "海外利用スコアを主軸に、FX手数料とATM対応を加味して算出。",
-    entries: [
-      {
-        rank: 1,
-        cardSlug: "tria",
-        reason:
-          "150カ国以上対応で世界1.3億店舗で利用可能。海外利用向けとして最も広い対応範囲。",
-        highlightScore: 8.8,
-        highlightLabel: "海外適性スコア",
-      },
-      {
-        rank: 2,
-        cardSlug: "zeal-card",
-        reason: "0.3%の超低FX手数料で海外での通貨変換コストを最小化。",
-        highlightScore: 7.5,
-        highlightLabel: "海外適性スコア",
-      },
-      {
-        rank: 3,
-        cardSlug: "picnic-card",
-        reason: "0.3%のFX手数料＋個人IBANで欧州での利用に特に強い。",
-        highlightScore: 7.5,
-        highlightLabel: "海外適性スコア",
-      },
-      {
-        rank: 4,
-        cardSlug: "kosh-card",
-        reason: "USD/EUR/AEDの3通貨対応で中東圏でも使いやすい。",
-        highlightScore: 7.0,
-        highlightLabel: "海外適性スコア",
-      },
-    ],
-    relatedArticleSlugs: ["overseas-usage-guide", "how-to-choose-crypto-card"],
-    relatedComparisonSlugs: ["tria-vs-zeal"],
-    updatedAt: "2026-04-01",
-  },
-  {
-    id: "beginner",
-    slug: "beginner",
-    category: "beginner",
-    title: "初心者向けクリプトカードランキング",
-    description:
-      "クリプトカードを初めて使う方向けに、入手のしやすさ・操作のシンプルさ・サポート体制を重視したランキングです。",
-    selectionCriteria:
-      "KYCの簡便さ、発行のしやすさ、アプリのわかりやすさ、サポート対応を評価。",
-    scoringMethod: "初心者適性スコアを主軸に、KYC難易度と発行スピードを加味して算出。",
-    entries: [
-      {
-        rank: 1,
-        cardSlug: "tria",
-        reason: "日本語対応・直感的なUI・Apple Pay対応で初心者でも使いやすい設計。",
-        highlightScore: 7.8,
-        highlightLabel: "初心者適性スコア",
-      },
-      {
-        rank: 2,
-        cardSlug: "picnic-card",
-        reason: "無料登録・シンプルなチャージ・わかりやすい料金体系が初心者に向いている。",
-        highlightScore: 8.0,
-        highlightLabel: "初心者適性スコア",
-      },
-      {
-        rank: 3,
-        cardSlug: "pexx-card",
-        reason: "USDT中心のシンプルな設計で、クリプト初心者でも理解しやすい。",
-        highlightScore: 7.5,
-        highlightLabel: "初心者適性スコア",
-      },
-    ],
-    relatedArticleSlugs: ["what-is-crypto-card", "how-to-choose-crypto-card"],
-    relatedComparisonSlugs: ["tria-vs-pexx"],
-    updatedAt: "2026-04-01",
+    relatedComparisonSlugs: [],
+    updatedAt: "2026-04-16",
   },
   {
     id: "japan-users",
     slug: "japan-users",
     category: "japan-users",
-    title: "日本ユーザー向けクリプトカードランキング",
+    title: "日本ユーザー向けクリプトカードランキング【2026年版】",
     description:
-      "日本からの申し込みしやすさ・日本語対応・日本のVisa加盟店での使いやすさを重視したランキングです。",
-    selectionCriteria:
-      "日本からの申し込み可否、日本語サポートの有無、日本のVisa/MC加盟店での使いやすさを評価。",
-    scoringMethod:
-      "日本ユーザー適性スコアを主軸に、対応地域とKYC要件を加味して算出。",
+      "日本語対応・日本からの申し込みやすさ・Visa加盟店での利便性を重視した日本ユーザー向けランキングです。",
+    rankingNote: "当サイト内での注目度・掲載状況をもとに表示しています。",
     entries: [
       {
         rank: 1,
         cardSlug: "tria",
         reason:
-          "日本語サイト（tria.so/ja）を提供し、150カ国以上対応。日本ユーザーへの親和性が最も高い。",
-        highlightScore: 8.5,
-        highlightLabel: "日本適性スコア",
+          "日本語サイト（tria.so/ja）を提供。150カ国以上対応で日本からの申し込み可能性が最も高いカード。",
+        keyStrength: "日本語対応あり",
       },
       {
         rank: 2,
-        cardSlug: "pexx-card",
-        reason: "シンガポール拠点でアジア向けに設計。日本からのアクセスが比較的スムーズ。",
-        highlightScore: 7.0,
-        highlightLabel: "日本適性スコア",
+        cardSlug: "kast",
+        reason:
+          "グローバル展開でUSDC利用ならFX手数料0%。日本ユーザーにとっても使いやすいシンプルな設計。",
+        keyStrength: "FX手数料0%",
       },
       {
         rank: 3,
-        cardSlug: "etherfi-mexc-card",
-        reason: "グローバル対応でETH保有の日本人ユーザーに相性が良い。",
-        highlightScore: 6.5,
-        highlightLabel: "日本適性スコア",
+        cardSlug: "tevau",
+        reason:
+          "180カ国以上の広いカバレッジ。アジア圏での実績もあり日本ユーザーとの相性が良い。",
+        keyStrength: "アジア実績あり",
       },
     ],
-    relatedArticleSlugs: ["how-to-choose-crypto-card", "what-is-kyc"],
-    relatedComparisonSlugs: ["tria-vs-pexx"],
-    updatedAt: "2026-04-01",
-  },
-  {
-    id: "withdrawal",
-    slug: "withdrawal",
-    category: "withdrawal",
-    title: "出金性重視クリプトカードランキング",
-    description:
-      "クリプト資産を効率よく現実世界で活用（出金）するための、上限・手数料・対応資産を重視したランキングです。",
-    selectionCriteria:
-      "日次・月次の利用上限、FX手数料の低さ、USDT/USDCへの対応、ATM利用可否を評価。",
-    scoringMethod: "出金スコアを主軸に、上限額とFX手数料を加味して算出。",
-    entries: [
-      {
-        rank: 1,
-        cardSlug: "tria",
-        reason: "最大$1M/日の上限・1,000以上のトークン対応で出金ルートとして最大の柔軟性。",
-        highlightScore: 9.0,
-        highlightLabel: "出金スコア",
-      },
-      {
-        rank: 2,
-        cardSlug: "pexx-card",
-        reason: "$50,000の日次上限とUSDT特化設計。出金ルートとしての実績を重視する方に。",
-        highlightScore: 8.5,
-        highlightLabel: "出金スコア",
-      },
-      {
-        rank: 3,
-        cardSlug: "kosh-card",
-        reason: "複数通貨口座とIBANで、多様な出金経路を確保できる。",
-        highlightScore: 7.5,
-        highlightLabel: "出金スコア",
-      },
-    ],
-    relatedArticleSlugs: ["fund-transfer-basics", "stablecoin-daily-payment"],
-    relatedComparisonSlugs: ["tria-vs-pexx"],
-    updatedAt: "2026-04-01",
-  },
-  {
-    id: "usdt",
-    slug: "usdt",
-    category: "usdt",
-    title: "USDT活用向けクリプトカードランキング",
-    description:
-      "USDTでのチャージ・決済・出金を中心に活用したいユーザー向けのランキングです。",
-    selectionCriteria:
-      "USDTへの対応、USDTでのチャージのしやすさ、USDT関連手数料の低さを評価。",
-    scoringMethod: "USDT活用スコアを主軸に、手数料とチャージ方法を加味。",
-    entries: [
-      {
-        rank: 1,
-        cardSlug: "tria",
-        reason: "USDT・USDC含む1,000以上のトークンに対応し、USDT活用の自由度が最高。",
-        highlightScore: 9.5,
-        highlightLabel: "USDT適性スコア",
-      },
-      {
-        rank: 2,
-        cardSlug: "pexx-card",
-        reason: "USDT特化設計でシンプル。$50,000の高上限でUSDT出金にも使いやすい。",
-        highlightScore: 9.0,
-        highlightLabel: "USDT適性スコア",
-      },
-      {
-        rank: 3,
-        cardSlug: "zeal-card",
-        reason: "USDT対応＋0.3%低手数料でUSDTのコスト効率が高い。",
-        highlightScore: 7.5,
-        highlightLabel: "USDT適性スコア",
-      },
-    ],
-    relatedArticleSlugs: ["stablecoin-daily-payment", "fund-transfer-basics"],
-    relatedComparisonSlugs: ["tria-vs-pexx"],
-    updatedAt: "2026-04-01",
+    relatedArticleSlugs: ["how-to-choose-crypto-card"],
+    relatedComparisonSlugs: [],
+    updatedAt: "2026-04-16",
   },
   {
     id: "defi",
     slug: "defi",
     category: "defi",
-    title: "DeFiユーザー向けクリプトカードランキング",
+    title: "DeFiユーザー向けクリプトカードランキング【2026年版】",
     description:
       "非カストディ型・マルチチェーン対応・オンチェーン連携を重視したDeFiユーザー向けランキングです。",
-    selectionCriteria:
-      "非カストディか否か、対応チェーンの多さ、オンチェーン利回りとの連携を評価。",
-    scoringMethod: "セキュリティスコアとUSDT活用スコアを組み合わせてDeFi適性を算出。",
+    rankingNote: "当サイト内での注目度・掲載状況をもとに表示しています。",
     entries: [
       {
         rank: 1,
         cardSlug: "tria",
         reason:
           "非カストディ型で1,000以上のトークン・マルチチェーン対応。DeFiとリアル決済を最高水準で統合。",
-        highlightScore: 9.2,
-        highlightLabel: "DeFi適性スコア",
+        keyStrength: "マルチチェーン",
       },
       {
         rank: 2,
-        cardSlug: "etherfi-mexc-card",
-        reason: "非カストディ型でETHステーキング収益を決済に活用できる。",
-        highlightScore: 8.0,
-        highlightLabel: "DeFi適性スコア",
+        cardSlug: "jupiter-global",
+        reason:
+          "Solana最大DEXアグリゲーター発の非カストディカード。SolanaエコシステムのDeFiユーザーに最適。",
+        keyStrength: "Solana特化",
       },
       {
         rank: 3,
-        cardSlug: "kosh-card",
-        reason: "非カストディ型でマルチ通貨口座を持つDeFiユーザー向け設計。",
-        highlightScore: 7.5,
-        highlightLabel: "DeFi適性スコア",
+        cardSlug: "bitget-wallet-card",
+        reason:
+          "Bitget Wallet連携の非カストディ型。EU・アジアのDeFiユーザーに対応。",
+        keyStrength: "非カストディ",
       },
     ],
-    relatedArticleSlugs: ["what-is-non-custodial-card", "stablecoin-daily-payment"],
-    relatedComparisonSlugs: ["tria-vs-etherfi"],
-    updatedAt: "2026-04-01",
+    relatedArticleSlugs: ["what-is-crypto-card"],
+    relatedComparisonSlugs: [],
+    updatedAt: "2026-04-16",
+  },
+  {
+    id: "usdt",
+    slug: "usdt",
+    category: "usdt",
+    title: "USDT・ステーブルコイン活用向けランキング【2026年版】",
+    description:
+      "USDTやUSDCでのチャージ・決済を中心に活用したいユーザー向けのランキングです。",
+    rankingNote: "当サイト内での注目度・掲載状況をもとに表示しています。",
+    entries: [
+      {
+        rank: 1,
+        cardSlug: "kast",
+        reason:
+          "USDC決済ならFX手数料0%。ステーブルコイン特化の設計で最もコストを抑えられる。",
+        keyStrength: "USDC手数料0%",
+      },
+      {
+        rank: 2,
+        cardSlug: "tria",
+        reason:
+          "USDT・USDC含む1,000以上のトークンに対応。ステーブルコイン活用の自由度が最高水準。",
+        keyStrength: "マルチトークン",
+      },
+      {
+        rank: 3,
+        cardSlug: "jupiter-global",
+        reason:
+          "USDCを軸にSolanaチェーンで運用。USD建て取引は手数料0%。",
+        keyStrength: "USD取引0%",
+      },
+    ],
+    relatedArticleSlugs: ["stablecoin-daily-payment"],
+    relatedComparisonSlugs: [],
+    updatedAt: "2026-04-16",
+  },
+  {
+    id: "overseas",
+    slug: "overseas",
+    category: "overseas",
+    title: "海外・グローバル利用向けランキング【2026年版】",
+    description:
+      "対応国数・FX手数料・グローバルでの使いやすさを重視した海外利用特化ランキングです。",
+    rankingNote: "当サイト内での注目度・掲載状況をもとに表示しています。",
+    entries: [
+      {
+        rank: 1,
+        cardSlug: "tevau",
+        reason:
+          "180カ国以上の広いカバレッジ。26万ユーザー超の実績を持つグローバルカード。",
+        keyStrength: "180カ国対応",
+      },
+      {
+        rank: 2,
+        cardSlug: "tria",
+        reason:
+          "150カ国以上・1.3億店舗以上で利用可能。BestPath AIで最安コストの海外利用が可能。",
+        keyStrength: "150カ国対応",
+      },
+      {
+        rank: 3,
+        cardSlug: "kast",
+        reason:
+          "グローバルなVisa加盟店対応。USD取引ならFX手数料0%で海外コストを最小化。",
+        keyStrength: "FX手数料0%",
+      },
+    ],
+    relatedArticleSlugs: ["overseas-usage-guide"],
+    relatedComparisonSlugs: [],
+    updatedAt: "2026-04-16",
   },
 ];
 
