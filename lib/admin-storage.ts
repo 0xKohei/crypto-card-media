@@ -10,7 +10,7 @@
  *   - 読み取りは空配列を返す (ビルド・表示を壊さない)
  *   - 書き込みは Error をスローする
  */
-import { getSupabaseClient } from "@/lib/supabase";
+import { getSupabaseClient, diagnoseSupabaseEnv } from "@/lib/supabase";
 
 // ─── 型定義 ──────────────────────────────────────────────────────
 
@@ -47,12 +47,25 @@ export interface DbHomepageFeatured {
 // ─── ヘルパー ─────────────────────────────────────────────────────
 
 function requireSupabase() {
+  const { hasUrl, hasKey, nodeEnv } = diagnoseSupabaseEnv();
+
+  // 診断ログ — 値そのものは出力しない
+  console.log("[admin-storage] env check", { hasUrl, hasKey, nodeEnv });
+
   const client = getSupabaseClient();
   if (!client) {
+    const missing: string[] = [];
+    if (!hasUrl) missing.push("SUPABASE_URL (または NEXT_PUBLIC_SUPABASE_URL)");
+    if (!hasKey) missing.push("SUPABASE_SERVICE_ROLE_KEY");
+
+    const detail =
+      missing.length > 0
+        ? `不足している環境変数: ${missing.join(", ")}`
+        : "URL/KEY は存在しますが createClient が失敗しました (値が空白か不正な可能性)";
+
     throw new Error(
-      "Supabase が設定されていません。" +
-      "SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY を環境変数に設定し、" +
-      "supabase-schema.sql を Supabase SQL エディタで実行してください。",
+      `Supabase 未設定: ${detail}。` +
+      "プロジェクトルートの .env.local に設定し、next dev を再起動してください。",
     );
   }
   return client;
