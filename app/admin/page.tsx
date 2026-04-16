@@ -106,29 +106,29 @@ function useToast() {
   const show = useCallback((msg: string, type: "success" | "error") => {
     const id = ++idRef.current;
     setToasts((prev) => [...prev, { id, msg, type }]);
-    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), 3500);
+    setTimeout(() => setToasts((prev) => prev.filter((t) => t.id !== id)), type === "error" ? 6000 : 3500);
   }, []);
   return { toasts, show };
 }
 
 function ToastArea({ toasts }: { toasts: ToastMsg[] }) {
   return (
-    <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-xs w-full">
+    <div className="fixed bottom-4 right-4 z-50 space-y-2 max-w-sm w-full">
       {toasts.map((t) => (
         <div
           key={t.id}
-          className={`flex items-center gap-2 px-4 py-3 rounded-xl text-sm font-medium shadow-lg border ${
+          className={`flex items-start gap-2 px-4 py-3 rounded-xl text-sm font-medium shadow-lg border ${
             t.type === "success"
               ? "bg-emerald-900 border-emerald-700 text-emerald-100"
               : "bg-red-900 border-red-700 text-red-100"
           }`}
         >
           {t.type === "success" ? (
-            <CheckCircle2 className="w-4 h-4 shrink-0" />
+            <CheckCircle2 className="w-4 h-4 shrink-0 mt-0.5" />
           ) : (
-            <AlertCircle className="w-4 h-4 shrink-0" />
+            <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
           )}
-          <span className="truncate">{t.msg}</span>
+          <span className="break-words min-w-0">{t.msg}</span>
         </div>
       ))}
     </div>
@@ -345,7 +345,8 @@ function CardRow({
       await onSave(form);
       showToast(`${form.name} を保存しました`, "success");
     } catch (e) {
-      showToast(`保存失敗: ${String(e)}`, "error");
+      const msg = e instanceof Error ? e.message : String(e);
+      showToast(`保存失敗: ${msg}`, "error");
     } finally {
       setSaving(false);
     }
@@ -361,9 +362,10 @@ function CardRow({
         `${updated.name} を${updated.isVisible ? "公開" : "非公開"}にしました`,
         "success",
       );
-    } catch {
+    } catch (e) {
       setForm(form);
-      showToast("切り替え失敗", "error");
+      const msg = e instanceof Error ? e.message : String(e);
+      showToast(`切り替え失敗: ${msg}`, "error");
     }
   };
 
@@ -767,7 +769,7 @@ function RankingEditor({
       const data = await apiFetch("/api/admin/rankings?category=overall", "GET", password);
       setEntries(data as RankingEntry[]);
     } catch (e) {
-      showToast(`読み込み失敗: ${String(e)}`, "error");
+      showToast(`読み込み失敗: ${e instanceof Error ? e.message : String(e)}`, "error");
     } finally {
       setLoading(false);
     }
@@ -801,7 +803,7 @@ function RankingEditor({
       });
       showToast("ランキングを保存しました", "success");
     } catch (e) {
-      showToast(`保存失敗: ${String(e)}`, "error");
+      showToast(`保存失敗: ${e instanceof Error ? e.message : String(e)}`, "error");
     } finally {
       setSaving(false);
     }
