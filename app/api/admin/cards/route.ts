@@ -6,6 +6,7 @@ import {
   getCardOverrides,
   upsertCardOverride,
   deleteCardOverride,
+  checkCardReferences,
 } from "@/lib/admin-storage";
 import type { Card, Region, Network } from "@/types";
 import { revalidatePath } from "next/cache";
@@ -34,12 +35,13 @@ export async function GET(req: NextRequest) {
   try {
     const overrides = await getCardOverrides();
 
-    const merged = staticCards.map((card) => {
+    const pick = <T>(v: unknown, fallback: T): T =>
+      v !== undefined && v !== null ? (v as T) : fallback;
+
+    // 静的カードにオーバーライドをマージ
+    const staticMerged = staticCards.map((card) => {
       const ov = overrides.find((o) => o.slug === card.slug);
       const fees = (ov?.fees ?? {}) as Record<string, unknown>;
-
-      const pick = <T>(v: unknown, fallback: T): T =>
-        v !== undefined && v !== null ? (v as T) : fallback;
 
       return {
         id: card.id,
@@ -49,13 +51,12 @@ export async function GET(req: NextRequest) {
         longDescription: pick<string>(fees.longDescription, card.longDescription ?? ""),
         cardImage: ov?.image ?? card.cardImage ?? card.image ?? "",
         isVisible: ov?.visible ?? true,
+        isDbOnly: false,
         tags: ov?.tags ?? card.tags ?? [],
-        // 基本情報
         network: pick<Network>(fees.network, card.network),
         keyStrength: pick<string>(fees.keyStrength, card.keyStrength ?? ""),
         priorityRank: pick<number>(fees.priorityRank, card.priorityRank ?? 99),
         referralUrl: pick<string>(fees.referralUrl, card.referralUrl ?? ""),
-        // 手数料
         fxFee: pick<string>(fees.fxFee, card.fxFee ?? ""),
         cashbackRate: pick<string>(fees.cashbackRate, card.cashbackRate ?? ""),
         cashbackDetails: pick<string>(fees.cashbackDetails, card.cashbackDetails ?? ""),
@@ -64,18 +65,15 @@ export async function GET(req: NextRequest) {
         annualFee: pick<string>(fees.annualFee, card.annualFee ?? ""),
         atmFee: pick<string>(fees.atmFee, card.atmFee ?? ""),
         spendingLimit: pick<string>(fees.spendingLimit, card.spendingLimit ?? ""),
-        // 機能
         applePay: pick<boolean>(fees.applePay, card.applePay),
         googlePay: pick<boolean>(fees.googlePay, card.googlePay),
         physicalCard: pick<boolean>(fees.physicalCard, card.physicalCard),
         virtualCard: pick<boolean>(fees.virtualCard, card.virtualCard),
         stablecoinSupport: pick<boolean>(fees.stablecoinSupport, card.stablecoinSupport),
-        // 地域・資産
         regionAvailability: pick<Region[]>(fees.regionAvailability, card.regionAvailability ?? []),
         topupMethods: pick<string[]>(fees.topupMethods, card.topupMethods ?? []),
         supportedAssets: pick<string[]>(fees.supportedAssets, card.supportedAssets ?? []),
         supportedChains: pick<string[]>(fees.supportedChains, card.supportedChains ?? []),
-        // テキスト
         pros: pick<string[]>(fees.pros, card.pros ?? []),
         cons: pick<string[]>(fees.cons, card.cons ?? []),
         useCases: pick<string[]>(fees.useCases, card.useCases ?? []),
@@ -84,7 +82,52 @@ export async function GET(req: NextRequest) {
       };
     });
 
-    return ok(merged);
+    // DB 専用カード (is_db_only=true かつ静的カードに存在しない)
+    const staticSlugs = new Set(staticCards.map((c) => c.slug));
+    const dbOnlyCards = overrides
+      .filter((o) => o.is_db_only === true && !staticSlugs.has(o.slug))
+      .map((ov) => {
+        const fees = (ov.fees ?? {}) as Record<string, unknown>;
+        return {
+          id: ov.slug,
+          slug: ov.slug,
+          name: ov.name ?? ov.slug,
+          shortDescription: ov.description ?? "",
+          longDescription: pick<string>(fees.longDescription, ""),
+          cardImage: ov.image ?? "",
+          isVisible: ov.visible ?? true,
+          isDbOnly: true,
+          tags: (ov.tags as string[]) ?? [],
+          network: pick<Network>(fees.network, "Visa"),
+          keyStrength: pick<string>(fees.keyStrength, ""),
+          priorityRank: pick<number>(fees.priorityRank, 99),
+          referralUrl: pick<string>(fees.referralUrl, ""),
+          fxFee: pick<string>(fees.fxFee, "—"),
+          cashbackRate: pick<string>(fees.cashbackRate, "—"),
+          cashbackDetails: pick<string>(fees.cashbackDetails, ""),
+          issuanceFee: pick<string>(fees.issuanceFee, "—"),
+          monthlyFee: pick<string>(fees.monthlyFee, "—"),
+          annualFee: pick<string>(fees.annualFee, ""),
+          atmFee: pick<string>(fees.atmFee, "—"),
+          spendingLimit: pick<string>(fees.spendingLimit, "—"),
+          applePay: pick<boolean>(fees.applePay, false),
+          googlePay: pick<boolean>(fees.googlePay, false),
+          physicalCard: pick<boolean>(fees.physicalCard, true),
+          virtualCard: pick<boolean>(fees.virtualCard, true),
+          stablecoinSupport: pick<boolean>(fees.stablecoinSupport, false),
+          regionAvailability: pick<Region[]>(fees.regionAvailability, []),
+          topupMethods: pick<string[]>(fees.topupMethods, []),
+          supportedAssets: pick<string[]>(fees.supportedAssets, []),
+          supportedChains: pick<string[]>(fees.supportedChains, []),
+          pros: pick<string[]>(fees.pros, []),
+          cons: pick<string[]>(fees.cons, []),
+          useCases: pick<string[]>(fees.useCases, []),
+          custodyType: pick<Card["custodyType"]>(fees.custodyType, "custodial"),
+          kycLevel: pick<Card["kycLevel"]>(fees.kycLevel, "standard"),
+        };
+      });
+
+    return ok([...staticMerged, ...dbOnlyCards]);
   } catch (e) {
     return err(`カード読み込み失敗: ${e instanceof Error ? e.message : String(e)}`);
   }
@@ -126,13 +169,28 @@ export async function POST(req: NextRequest) {
       slug,
       name: (body.name as string) ?? null,
       description: (body.shortDescription as string) ?? null,
-      image: (body.cardImage as string) ?? null,
+      image: (body.cardImage as string) || null,
       visible: body.isVisible !== undefined ? Boolean(body.isVisible) : true,
+      is_db_only: body.is_db_only === true,
       tags: Array.isArray(body.tags) ? (body.tags as string[]) : null,
       fees,
     });
   } catch (e) {
-    return err(`保存失敗: ${e instanceof Error ? e.message : String(e)}`);
+    const msg = e instanceof Error ? e.message : String(e);
+    // is_db_only カラム未適用を 503 + 明示エラーで返す (500 禁止)
+    if (msg.toLowerCase().includes("is_db_only")) {
+      return NextResponse.json(
+        {
+          success: false,
+          error:
+            "マイグレーション v3 が未適用です。supabase-migration-v3.sql を Supabase SQL Editor で実行してください。",
+          migrationRequired: true,
+          migration: "supabase-migration-v3.sql",
+        },
+        { status: 503 },
+      );
+    }
+    return err(`保存失敗: ${msg}`);
   }
 
   try {
@@ -149,13 +207,34 @@ export async function POST(req: NextRequest) {
 
 /**
  * DELETE /api/admin/cards?slug=xxx
- * オーバーライドを削除 (静的データのデフォルトに戻る)。
+ * DB 専用カード (is_db_only=true) を削除する。
+ * 静的カードのオーバーライドはこのエンドポイントでは削除できない (visible=false で非公開にすること)。
+ * rankings / homepage_featured から参照されている場合は 409 を返す。
  */
 export async function DELETE(req: NextRequest) {
   if (!checkAuth(req)) return err("Unauthorized", 401);
 
   const slug = req.nextUrl.searchParams.get("slug") ?? req.nextUrl.searchParams.get("id");
   if (!slug) return err("slug が必要です", 400);
+
+  // 参照チェック
+  try {
+    const refs = await checkCardReferences(slug);
+    if (refs.length > 0) {
+      const detail = refs.map((r) => r.detail).join("、");
+      return NextResponse.json(
+        {
+          success: false,
+          error: `このカードは ${detail} で参照されています。先に参照を解除してください。`,
+          blocked: true,
+          refs,
+        },
+        { status: 409 },
+      );
+    }
+  } catch (e) {
+    return err(`参照チェック失敗: ${e instanceof Error ? e.message : String(e)}`);
+  }
 
   try {
     await deleteCardOverride(slug);

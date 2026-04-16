@@ -4,7 +4,18 @@ import {
   getRankings,
   getHomepageFeaturedSlots,
 } from "@/lib/admin-storage";
-import type { Card, Region, Network } from "@/types";
+import type {
+  Card,
+  Region,
+  Network,
+  CardType,
+  CustodyType,
+  KycLevel,
+  IssuerType,
+  RewardType,
+  AvailabilityStatus,
+  CardFAQ,
+} from "@/types";
 
 // ─── 公開型 ──────────────────────────────────────────────────────
 
@@ -91,21 +102,132 @@ function mergeCardOverride(
   } as unknown as Card & { isVisible?: boolean };
 }
 
+// ─── DB 専用カードビルダー ──────────────────────────────────────────
+
+/**
+ * Supabase cards テーブルの is_db_only=true 行から完全な Card オブジェクトを構築する。
+ * fees JSONB に格納されたフィールドを使用し、存在しない場合はデフォルト値を適用する。
+ */
+function buildDbOnlyCard(
+  override: Awaited<ReturnType<typeof getCardOverrides>>[number],
+): Card & { isVisible?: boolean; isDbOnly?: boolean } {
+  const fees = (override.fees ?? {}) as Record<string, unknown>;
+
+  const pick = <T>(v: unknown, fallback: T): T =>
+    v !== undefined && v !== null ? (v as T) : fallback;
+
+  const today = new Date().toISOString().split("T")[0];
+
+  return {
+    id: override.slug,
+    slug: override.slug,
+    name: override.name ?? override.slug,
+    logo: pick(fees.logo, "💳"),
+    coverColor: pick(fees.coverColor, "from-slate-600 to-slate-700"),
+    description: override.description ?? "",
+    fees: {
+      issuance: pick(fees.issuanceFee, "—") as string,
+      annual: pick(fees.annualFee, "—") as string,
+      fx: pick(fees.fxFee, "—") as string,
+      atm: pick(fees.atmFee, "—") as string,
+    },
+    cashback: {
+      rate: pick(fees.cashbackRate, "—") as string,
+      condition: pick(fees.cashbackDetails, "—") as string,
+    },
+    atm: { available: true, limit: pick(fees.spendingLimit, "—") as string },
+    availability: { countries: [], japan: "unknown" as const },
+    source: { url: pick(fees.officialUrl, "") as string, section: "" },
+    shortDescription: override.description ?? "",
+    longDescription: pick(fees.longDescription, "") as string,
+    issuer: pick(fees.issuer, override.name ?? override.slug) as string,
+    issuerType: pick(fees.issuerType, "fintech") as IssuerType,
+    provider: pick(fees.provider, "") as string,
+    network: pick(fees.network, "Visa") as Network,
+    regionAvailability: pick(fees.regionAvailability, []) as Region[],
+    supportedCountries: pick(fees.supportedCountries, []) as string[],
+    cardType: pick(fees.cardType, "prepaid") as CardType,
+    custodyType: pick(fees.custodyType, "custodial") as CustodyType,
+    kycRequired: pick(fees.kycRequired, true) as boolean,
+    kycLevel: pick(fees.kycLevel, "standard") as KycLevel,
+    physicalCard: pick(fees.physicalCard, true) as boolean,
+    virtualCard: pick(fees.virtualCard, true) as boolean,
+    applePay: pick(fees.applePay, false) as boolean,
+    googlePay: pick(fees.googlePay, false) as boolean,
+    cashbackRate: pick(fees.cashbackRate, "—") as string,
+    cashbackDetails: pick(fees.cashbackDetails, "") as string,
+    rewardType: pick(fees.rewardType, "none") as RewardType,
+    stakingRequired: pick(fees.stakingRequired, false) as boolean,
+    subscriptionRequired: pick(fees.subscriptionRequired, false) as boolean,
+    issuanceFee: pick(fees.issuanceFee, "—") as string,
+    monthlyFee: pick(fees.monthlyFee, "—") as string,
+    annualFee: pick(fees.annualFee, undefined) as string | undefined,
+    fxFee: pick(fees.fxFee, "—") as string,
+    atmFee: pick(fees.atmFee, "—") as string,
+    spendingLimit: pick(fees.spendingLimit, "—") as string,
+    topupMethods: pick(fees.topupMethods, []) as string[],
+    supportedAssets: pick(fees.supportedAssets, []) as string[],
+    supportedFiatCurrencies: pick(fees.supportedFiatCurrencies, []) as string[],
+    supportedChains: pick(fees.supportedChains, []) as string[],
+    settlementMethod: pick(fees.settlementMethod, "") as string,
+    stablecoinSupport: pick(fees.stablecoinSupport, false) as boolean,
+    spendFrom: pick(fees.spendFrom, "") as string,
+    rechargeModel: pick(fees.rechargeModel, "") as string,
+    referralProgram: pick(fees.referralProgram, false) as boolean,
+    availabilityStatus: pick(fees.availabilityStatus, "available") as AvailabilityStatus,
+    waitlist: pick(fees.waitlist, false) as boolean,
+    bestFor: pick(fees.bestFor, []) as string[],
+    useCases: pick(fees.useCases, []) as string[],
+    pros: pick(fees.pros, []) as string[],
+    cons: pick(fees.cons, []) as string[],
+    faq: pick(fees.faq, []) as CardFAQ[],
+    relatedGuides: pick(fees.relatedGuides, []) as string[],
+    relatedComparisons: pick(fees.relatedComparisons, []) as string[],
+    relatedTopPicks: pick(fees.relatedTopPicks, []) as string[],
+    tags: (override.tags as string[]) ?? [],
+    officialUrl: pick(fees.officialUrl, "") as string,
+    referralUrl: pick(fees.referralUrl, undefined) as string | undefined,
+    isEditorsPick: pick(fees.isEditorsPick, false) as boolean,
+    isFeatured: pick(fees.isFeatured, true) as boolean,
+    isSponsor: pick(fees.isSponsor, false) as boolean,
+    image: override.image ?? undefined,
+    cardImage: override.image ?? undefined,
+    isPriority: pick(fees.isPriority, false) as boolean,
+    priorityRank: pick(fees.priorityRank, undefined) as number | undefined,
+    keyStrength: pick(fees.keyStrength, undefined) as string | undefined,
+    lastReviewed: pick(fees.lastReviewed, today) as string,
+    lastUpdated: pick(fees.lastUpdated, today) as string,
+    isVisible: override.visible ?? true,
+    isDbOnly: true,
+  } as unknown as Card & { isVisible?: boolean; isDbOnly?: boolean };
+}
+
 // ─── 公開 API ─────────────────────────────────────────────────────
 
 /**
  * 全カードを返す。
- * Supabase cards テーブルのオーバーライドを静的データにマージし、
- * isVisible=false のカードを除外する。
+ * 1. Supabase cards テーブルのオーバーライドを静的データにマージ
+ * 2. is_db_only=true の行は buildDbOnlyCard() で独立したカードとして構築
+ * 3. isVisible=false のカードを除外する
  */
-export async function getCards(): Promise<(Card & { isVisible?: boolean })[]> {
+export async function getCards(): Promise<(Card & { isVisible?: boolean; isDbOnly?: boolean })[]> {
   const overrides = await getCardOverrides();
-  return staticCards
+
+  // 静的カードにオーバーライドをマージ
+  const staticMerged = staticCards
     .map((card) => {
       const override = overrides.find((o) => o.slug === card.slug);
       return mergeCardOverride(card, override);
     })
     .filter((card) => card.isVisible !== false);
+
+  // DB 専用カード (is_db_only=true かつ staticCards に存在しないもの)
+  const staticSlugs = new Set(staticCards.map((c) => c.slug));
+  const dbOnlyCards = overrides
+    .filter((o) => o.is_db_only === true && !staticSlugs.has(o.slug) && o.visible !== false)
+    .map(buildDbOnlyCard);
+
+  return [...staticMerged, ...dbOnlyCards];
 }
 
 export async function getCardBySlug(

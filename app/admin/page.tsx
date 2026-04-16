@@ -12,7 +12,135 @@ import {
   Lock,
   AlertCircle,
   CheckCircle2,
+  Plus,
+  Trash2,
+  Upload,
+  Crop,
+  X,
+  ShieldAlert,
+  ExternalLink,
 } from "lucide-react";
+
+// ─────────────────────────────────────────────
+// Health check types
+// ─────────────────────────────────────────────
+interface HealthResult {
+  success: boolean;
+  missing?: string[];
+  database?: {
+    cardsTableReachable?: boolean;
+    rankingsTableReachable?: boolean;
+    homepageFeaturedTableReachable?: boolean;
+    isDbOnlyColumnExists?: boolean;
+    bucketExists?: boolean;
+  };
+  dashboard?: {
+    sqlUrl: string;
+    storageUrl: string;
+  };
+}
+
+// ─────────────────────────────────────────────
+// Setup warning banner
+// ─────────────────────────────────────────────
+function SetupWarningBanner({ health }: { health: HealthResult }) {
+  const missing = health.missing ?? [];
+  if (missing.length === 0) return null;
+
+  const dash = health.dashboard;
+  const db = health.database;
+
+  const items: Array<{ key: string; title: string; lines: Array<{ type: "text" | "code" | "link"; content: string }> }> = [];
+
+  // テーブル未作成
+  if (!db?.cardsTableReachable || !db?.rankingsTableReachable || !db?.homepageFeaturedTableReachable) {
+    items.push({
+      key: "tables",
+      title: "データベーステーブルが存在しません",
+      lines: [
+        { type: "text", content: "supabase-schema.sql の内容を SQL Editor で実行してください" },
+        ...(dash ? [{ type: "link" as const, content: dash.sqlUrl }] : []),
+      ],
+    });
+  }
+
+  // is_db_only カラム未追加
+  if (missing.includes("column:cards.is_db_only")) {
+    items.push({
+      key: "migration",
+      title: 'マイグレーション v3 が未適用 (is_db_only カラムがありません)',
+      lines: [
+        { type: "text", content: "supabase-migration-v3.sql の内容を SQL Editor で実行してください" },
+        { type: "code", content: "ALTER TABLE cards ADD COLUMN IF NOT EXISTS is_db_only boolean DEFAULT false NOT NULL;" },
+        ...(dash ? [{ type: "link" as const, content: dash.sqlUrl }] : []),
+      ],
+    });
+  }
+
+  // bucket 未作成
+  if (missing.includes("bucket:card-images")) {
+    items.push({
+      key: "bucket",
+      title: 'Storage bucket "card-images" が存在しません（画像アップロード不可）',
+      lines: [
+        { type: "text", content: "Supabase Dashboard → Storage → New bucket をクリック" },
+        { type: "code", content: 'Bucket name: card-images  /  Public bucket: ON' },
+        ...(dash ? [{ type: "link" as const, content: dash.storageUrl }] : []),
+      ],
+    });
+  }
+
+  if (items.length === 0) return null;
+
+  return (
+    <div className="mb-6 bg-red-950/40 border border-red-800 rounded-xl overflow-hidden">
+      <div className="flex items-center gap-2 px-4 py-3 bg-red-900/40 border-b border-red-800">
+        <ShieldAlert className="w-4 h-4 text-red-400 flex-shrink-0" />
+        <p className="text-sm font-semibold text-red-300">
+          {items.length}件のセットアップが未完了です
+        </p>
+      </div>
+      <div className="p-4 space-y-3">
+        {items.map((item) => (
+          <div key={item.key} className="bg-red-900/25 border border-red-800/40 rounded-lg p-3 space-y-2">
+            <p className="text-xs font-bold text-red-300">{item.title}</p>
+            {item.lines.map((line, i) => {
+              if (line.type === "link") {
+                return (
+                  <a
+                    key={i}
+                    href={line.content}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 break-all"
+                  >
+                    <ExternalLink className="w-3 h-3 flex-shrink-0" />
+                    {line.content}
+                  </a>
+                );
+              }
+              if (line.type === "code") {
+                return (
+                  <code key={i} className="block bg-red-950/60 border border-red-900 rounded px-2 py-1 text-xs text-red-200 font-mono break-all">
+                    {line.content}
+                  </code>
+                );
+              }
+              return (
+                <p key={i} className="text-xs text-red-200">
+                  {line.content}
+                </p>
+              );
+            })}
+          </div>
+        ))}
+        <p className="text-xs text-red-400 pt-1">
+          解消後は「再読込」ボタンで再確認できます。
+        </p>
+      </div>
+    </div>
+  );
+}
 
 // ─────────────────────────────────────────────
 // Types
@@ -22,6 +150,7 @@ interface AdminCard {
   name: string;
   slug: string;
   isVisible: boolean;
+  isDbOnly?: boolean;
   network: string;
   keyStrength: string;
   priorityRank: number;
@@ -257,6 +386,413 @@ function SectionHeading({ title }: { title: string }) {
 }
 
 // ─────────────────────────────────────────────
+// Crop modal
+// ─────────────────────────────────────────────
+const CARD_ASPECT = 85.6 / 53.98; // ISO/IEC 7810 ID-1 card ratio ≈ 1.586
+
+function CropModal({
+  src,
+  onCrop,
+  onClose,
+}: {
+  src: string;
+  onCrop: (blob: Blob) => void;
+  onClose: () => void;
+}) {
+  const imgRef = useRef<HTMLImageElement>(null);
+  const [ready, setReady] = useState(false);
+  const [imgDims, setImgDims] = useState({ w: 0, h: 0 });
+  const [box, setBox] = useState({ x: 0, y: 0, w: 300, h: 189 });
+  const dragRef = useRef<{ startX: number; startY: number; boxX: number; boxY: number } | null>(null);
+  // Refs for latest values — avoids stale-closure bug in event handlers registered once
+  const imgDimsRef = useRef({ w: 0, h: 0 });
+  const boxRef = useRef({ x: 0, y: 0, w: 300, h: 189 });
+
+  const onImgLoad = () => {
+    const img = imgRef.current;
+    if (!img) return;
+    const w = img.clientWidth;
+    const h = img.clientHeight;
+    imgDimsRef.current = { w, h };
+    setImgDims({ w, h });
+    // Maintain aspect ratio: start with full width, clamp height, recalculate width if needed
+    let bw = w;
+    let bh = Math.round(bw / CARD_ASPECT);
+    if (bh > h) { bh = h; bw = Math.round(bh * CARD_ASPECT); }
+    const bx = Math.max(0, Math.round((w - bw) / 2));
+    const by = Math.max(0, Math.round((h - bh) / 2));
+    const newBox = { x: bx, y: by, w: bw, h: bh };
+    boxRef.current = newBox;
+    setBox(newBox);
+    setReady(true);
+  };
+
+  // Register handlers once (empty deps) — read latest values through refs
+  useEffect(() => {
+    const move = (e: MouseEvent) => {
+      if (!dragRef.current || !imgDimsRef.current.w) return;
+      const dx = e.clientX - dragRef.current.startX;
+      const dy = e.clientY - dragRef.current.startY;
+      const { w: bw, h: bh } = boxRef.current;
+      const { w: iw, h: ih } = imgDimsRef.current;
+      const nx = Math.max(0, Math.min(dragRef.current.boxX + dx, iw - bw));
+      const ny = Math.max(0, Math.min(dragRef.current.boxY + dy, ih - bh));
+      const updated = { ...boxRef.current, x: nx, y: ny };
+      boxRef.current = updated;
+      setBox(updated);
+    };
+    const up = () => { dragRef.current = null; };
+    window.addEventListener("mousemove", move);
+    window.addEventListener("mouseup", up);
+    return () => {
+      window.removeEventListener("mousemove", move);
+      window.removeEventListener("mouseup", up);
+    };
+  }, []); // empty — uses refs for current values
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    dragRef.current = { startX: e.clientX, startY: e.clientY, boxX: box.x, boxY: box.y };
+    e.preventDefault();
+  };
+
+  const doCrop = () => {
+    const img = imgRef.current;
+    if (!img) return;
+    // SVG naturalWidth is 0 in some browsers — fall back to rendered size
+    const nw = img.naturalWidth > 0 ? img.naturalWidth : imgDimsRef.current.w;
+    const nh = img.naturalHeight > 0 ? img.naturalHeight : imgDimsRef.current.h;
+    const scaleX = nw / imgDimsRef.current.w;
+    const scaleY = nh / imgDimsRef.current.h;
+    const canvas = document.createElement("canvas");
+    const outW = 860; // Retina-friendly output
+    const outH = Math.round(outW / CARD_ASPECT);
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+    ctx.drawImage(
+      img,
+      box.x * scaleX,
+      box.y * scaleY,
+      box.w * scaleX,
+      box.h * scaleY,
+      0, 0, outW, outH,
+    );
+    canvas.toBlob((blob) => {
+      if (blob) onCrop(blob);
+    }, "image/webp", 0.92);
+  };
+
+  return (
+    <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl">
+        <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <Crop className="w-4 h-4 text-blue-400" />
+            <h3 className="font-bold text-white text-sm">トリミング</h3>
+          </div>
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-slate-400">カード比率 (1.586:1) でトリミング · ドラッグして範囲を調整</span>
+            <button onClick={onClose} className="text-slate-400 hover:text-white">
+              <X className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+        <div className="p-4 overflow-auto max-h-[60vh]">
+          <div className="relative inline-block select-none">
+            {/* eslint-disable-next-line @next/next/no-img-element */}
+            <img
+              ref={imgRef}
+              src={src}
+              alt="crop target"
+              className="max-w-full block"
+              style={{ maxHeight: "52vh" }}
+              onLoad={onImgLoad}
+              draggable={false}
+            />
+            {ready && (
+              <>
+                {/* Overlay outside crop box */}
+                <div className="absolute inset-0 pointer-events-none">
+                  <div className="absolute top-0 left-0 right-0 bg-black/60" style={{ height: box.y }} />
+                  <div className="absolute left-0 right-0 bottom-0 bg-black/60" style={{ height: imgDims.h - box.y - box.h }} />
+                  <div className="absolute bg-black/60" style={{ top: box.y, left: 0, width: box.x, height: box.h }} />
+                  <div className="absolute bg-black/60" style={{ top: box.y, left: box.x + box.w, right: 0, height: box.h }} />
+                </div>
+                {/* Draggable crop box */}
+                <div
+                  className="absolute border-2 border-white cursor-move"
+                  style={{ left: box.x, top: box.y, width: box.w, height: box.h }}
+                  onMouseDown={handleMouseDown}
+                >
+                  <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white" />
+                  <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-white" />
+                  <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-white" />
+                  <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-white" />
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+        <div className="p-4 border-t border-slate-700 flex justify-end gap-2">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-slate-400 hover:text-white"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={doCrop}
+            disabled={!ready}
+            className="flex items-center gap-1.5 px-4 py-2 text-sm bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold rounded-xl"
+          >
+            <Crop className="w-3.5 h-3.5" />
+            この範囲で切り取る
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
+// New card modal
+// ─────────────────────────────────────────────
+function NewCardModal({
+  cardList,
+  password,
+  onClose,
+  onCreate,
+  showToast,
+}: {
+  cardList: AdminCard[];
+  password: string;
+  onClose: () => void;
+  onCreate: (card: AdminCard) => void;
+  showToast: (msg: string, type: "success" | "error") => void;
+}) {
+  const [slug, setSlug] = useState("");
+  const [name, setName] = useState("");
+  const [network, setNetwork] = useState("Visa");
+  const [fxFee, setFxFee] = useState("");
+  const [cashbackRate, setCashbackRate] = useState("");
+  const [issuanceFee, setIssuanceFee] = useState("");
+  const [officialUrl, setOfficialUrl] = useState("");
+  const [referralUrl, setReferralUrl] = useState("");
+  const [shortDescription, setShortDescription] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [slugError, setSlugError] = useState("");
+
+  const validateSlug = (s: string): string => {
+    if (!s) return "";
+    if (!/^[a-z0-9-]+$/.test(s)) return "小文字英数字とハイフンのみ使用可能です";
+    if (cardList.some((c) => c.slug === s || c.id === s)) return "このslugはすでに使用されています";
+    return "";
+  };
+
+  const handleSlugChange = (v: string) => {
+    const cleaned = v.toLowerCase().replace(/[^a-z0-9-]/g, "-");
+    setSlug(cleaned);
+    setSlugError(validateSlug(cleaned));
+  };
+
+  const handleCreate = async () => {
+    const se = validateSlug(slug);
+    if (se) { setSlugError(se); return; }
+    if (!name.trim()) { showToast("カード名を入力してください", "error"); return; }
+    setSaving(true);
+    try {
+      await apiFetch("/api/admin/cards", "POST", password, {
+        id: slug,
+        slug,
+        name,
+        network,
+        fxFee,
+        cashbackRate,
+        issuanceFee,
+        officialUrl,
+        referralUrl,
+        shortDescription,
+        cardImage: "",
+        isVisible: true,
+        is_db_only: true,
+        priorityRank: 99,
+        keyStrength: "",
+        longDescription: "",
+        monthlyFee: "—",
+        annualFee: "",
+        atmFee: "—",
+        spendingLimit: "—",
+        cashbackDetails: "",
+        applePay: false,
+        googlePay: false,
+        physicalCard: true,
+        virtualCard: true,
+        stablecoinSupport: false,
+        regionAvailability: [],
+        tags: [],
+        pros: [],
+        cons: [],
+        useCases: [],
+        topupMethods: [],
+        supportedAssets: [],
+        supportedChains: [],
+        custodyType: "custodial",
+        kycLevel: "standard",
+      });
+
+      onCreate({
+        id: slug,
+        slug,
+        name,
+        isVisible: true,
+        isDbOnly: true,
+        network,
+        keyStrength: "",
+        priorityRank: 99,
+        referralUrl,
+        cardImage: "",
+        shortDescription,
+        longDescription: "",
+        fxFee,
+        cashbackRate,
+        cashbackDetails: "",
+        issuanceFee,
+        monthlyFee: "—",
+        annualFee: "",
+        atmFee: "—",
+        spendingLimit: "—",
+        applePay: false,
+        googlePay: false,
+        physicalCard: true,
+        virtualCard: true,
+        stablecoinSupport: false,
+        regionAvailability: [],
+        tags: [],
+        pros: [],
+        cons: [],
+        useCases: [],
+        topupMethods: [],
+        supportedAssets: [],
+        supportedChains: [],
+        custodyType: "custodial",
+        kycLevel: "standard",
+      });
+      showToast(`${name} を追加しました`, "success");
+      onClose();
+    } catch (e) {
+      showToast(`追加失敗: ${e instanceof Error ? e.message : String(e)}`, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 bg-black/60 flex items-center justify-center p-4">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-lg max-h-[90vh] overflow-y-auto">
+        <div className="p-5 border-b border-slate-700 flex items-center justify-between sticky top-0 bg-slate-900">
+          <div className="flex items-center gap-2">
+            <Plus className="w-4 h-4 text-blue-400" />
+            <h3 className="font-bold text-white">新規カード追加</h3>
+          </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        <div className="p-5 space-y-4">
+          {/* slug */}
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">
+              slug <span className="text-red-400">*</span>
+              <span className="text-slate-500 font-normal ml-1">— URL・ID に使用。後から変更不可</span>
+            </label>
+            <input
+              type="text"
+              value={slug}
+              onChange={(e) => handleSlugChange(e.target.value)}
+              placeholder="例: new-card-name"
+              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            {slugError && <p className="text-red-400 text-xs mt-1">{slugError}</p>}
+            {slug && !slugError && (
+              <p className="text-slate-500 text-xs mt-1">URL: /cards/{slug}</p>
+            )}
+          </div>
+
+          {/* name */}
+          <div>
+            <label className="block text-xs font-medium text-slate-400 mb-1">
+              カード名 <span className="text-red-400">*</span>
+            </label>
+            <input
+              type="text"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="例: ExampleCard"
+              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+          </div>
+
+          {/* network */}
+          <SelectField
+            label="ネットワーク"
+            value={network}
+            onChange={setNetwork}
+            options={[
+              { value: "Visa", label: "Visa" },
+              { value: "Mastercard", label: "Mastercard" },
+              { value: "Both", label: "Visa + Mastercard" },
+              { value: "Other", label: "その他" },
+            ]}
+          />
+
+          {/* fees */}
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="FX手数料" value={fxFee} onChange={setFxFee} />
+            <Field label="還元率" value={cashbackRate} onChange={setCashbackRate} />
+            <Field label="発行手数料" value={issuanceFee} onChange={setIssuanceFee} />
+          </div>
+
+          {/* urls */}
+          <Field label="公式URL" value={officialUrl} onChange={setOfficialUrl} />
+          <Field label="紹介URL (referralUrl)" value={referralUrl} onChange={setReferralUrl} />
+
+          {/* description */}
+          <TextareaField
+            label="一言説明 (shortDescription)"
+            value={shortDescription}
+            onChange={setShortDescription}
+            rows={2}
+          />
+
+          <div className="bg-slate-800/50 border border-slate-700 rounded-lg px-3 py-2 text-xs text-slate-400">
+            画像・詳細スペックはカード追加後に編集フォームから設定できます。
+          </div>
+        </div>
+
+        <div className="p-5 border-t border-slate-700 flex justify-end gap-3 sticky bottom-0 bg-slate-900">
+          <button
+            onClick={onClose}
+            className="px-4 py-2 text-sm text-slate-400 hover:text-white"
+          >
+            キャンセル
+          </button>
+          <button
+            onClick={handleCreate}
+            disabled={saving || !!slugError || !slug || !name.trim()}
+            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold px-6 py-2.5 rounded-xl transition-colors"
+          >
+            <Plus className="w-4 h-4" />
+            {saving ? "追加中..." : "カードを追加"}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Login screen
 // ─────────────────────────────────────────────
 function LoginForm({ onLogin }: { onLogin: (pw: string) => void }) {
@@ -327,16 +863,30 @@ function LoginForm({ onLogin }: { onLogin: (pw: string) => void }) {
 // ─────────────────────────────────────────────
 function CardRow({
   card,
+  password,
   onSave,
+  onDelete,
   showToast,
 }: {
   card: AdminCard;
+  password: string;
   onSave: (updated: AdminCard) => Promise<void>;
+  onDelete?: (slug: string) => Promise<void>;
   showToast: (msg: string, type: "success" | "error") => void;
 }) {
   const [open, setOpen] = useState(false);
   const [form, setForm] = useState<AdminCard>(card);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+
+  // Image upload state
+  const [imageFile, setImageFile] = useState<File | null>(null);
+  const [imagePreviewUrl, setImagePreviewUrl] = useState<string | null>(null);
+  const [croppedBlob, setCroppedBlob] = useState<Blob | null>(null);
+  const [showCrop, setShowCrop] = useState(false);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => {
     setForm(card);
@@ -344,6 +894,122 @@ function CardRow({
 
   const set = <K extends keyof AdminCard>(field: K, value: AdminCard[K]) =>
     setForm((f) => ({ ...f, [field]: value }));
+
+  const handleFileSelect = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const f = e.target.files?.[0];
+    if (!f) return;
+    setImageFile(f);
+    setCroppedBlob(null);
+    const url = URL.createObjectURL(f);
+    setImagePreviewUrl(url);
+    e.target.value = ""; // reset so same file can be reselected
+  };
+
+  const handleCropDone = (blob: Blob) => {
+    setCroppedBlob(blob);
+    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    setImagePreviewUrl(URL.createObjectURL(blob));
+    setShowCrop(false);
+  };
+
+  const resetImage = () => {
+    if (imagePreviewUrl) URL.revokeObjectURL(imagePreviewUrl);
+    setImageFile(null);
+    setImagePreviewUrl(null);
+    setCroppedBlob(null);
+  };
+
+  const handleUpload = async () => {
+    const uploadTarget = croppedBlob ?? imageFile;
+    if (!uploadTarget) return;
+    setUploadingImage(true);
+    try {
+      // Best-effort: delete old Storage file before uploading new one
+      if (form.cardImage) {
+        const oldMatch = form.cardImage.match(/\/card-images\/(cards\/.+?)(?:\?|$)/);
+        if (oldMatch) {
+          fetch(`/api/admin/cards/upload?path=${encodeURIComponent(oldMatch[1])}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${password}` },
+          }).catch(() => {}); // fire-and-forget; failure is non-critical
+        }
+      }
+
+      const fd = new FormData();
+      const ext = croppedBlob ? "webp" : (imageFile?.name.split(".").pop() ?? "jpg");
+      fd.append("file", uploadTarget, `${form.slug}.${ext}`);
+      fd.append("slug", form.slug);
+      const res = await fetch("/api/admin/cards/upload", {
+        method: "POST",
+        headers: { Authorization: `Bearer ${password}` },
+        body: fd,
+      });
+      const json = (await res.json()) as {
+        success: boolean;
+        url?: string;
+        error?: string;
+        bucketMissing?: boolean;
+        setupUrl?: string;
+        setupInstructions?: string[];
+      };
+      if (!json.success) {
+        if (json.bucketMissing) {
+          showToast(
+            `Storage bucket "card-images" が未作成です。supabase-migration-v3.sql を実行してください。`,
+            "error",
+          );
+        } else {
+          throw new Error(json.error ?? "Unknown error");
+        }
+        return;
+      }
+      const newUrl = json.url ?? "";
+      // Storage パスを抽出 — DB 保存失敗時のロールバックに使う
+      const newStoragePath =
+        newUrl.match(/\/card-images\/(cards\/.+?)(?:\?|$)/)?.[1] ?? null;
+
+      const updated = { ...form, cardImage: newUrl };
+      setForm(updated);
+      // Auto-save: DB 保存失敗なら Storage ファイルをロールバック削除してフォームを戻す
+      try {
+        await onSave(updated);
+        showToast("画像をアップロードして保存しました", "success");
+        resetImage();
+      } catch (saveErr) {
+        // Rollback: アップロード済みファイルを削除して Storage/DB の不整合を防ぐ
+        if (newStoragePath) {
+          fetch(`/api/admin/cards/upload?path=${encodeURIComponent(newStoragePath)}`, {
+            method: "DELETE",
+            headers: { Authorization: `Bearer ${password}` },
+          }).catch(() => {});
+        }
+        setForm(form); // フォームを保存前の状態に戻す
+        showToast(
+          `DB保存失敗 (アップロードはロールバックしました): ${saveErr instanceof Error ? saveErr.message : String(saveErr)}`,
+          "error",
+        );
+      }
+    } catch (e) {
+      showToast(`アップロード失敗: ${e instanceof Error ? e.message : String(e)}`, "error");
+    } finally {
+      setUploadingImage(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!onDelete) return;
+    setDeleting(true);
+    try {
+      await onDelete(form.slug);
+      showToast(`${form.name} を削除しました`, "success");
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : String(e);
+      showToast(`削除失敗: ${msg}`, "error");
+    } finally {
+      setDeleting(false);
+      setConfirmDelete(false);
+    }
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -360,6 +1026,12 @@ function CardRow({
 
   const toggleVisible = async (e: React.MouseEvent) => {
     e.stopPropagation();
+    // Require confirmation before hiding a live card — accidental 1-click hide is hard to notice
+    if (form.isVisible) {
+      if (!window.confirm(`「${form.name}」を非公開にしますか？\nサイトから即座に非表示になります。`)) {
+        return;
+      }
+    }
     const updated = { ...form, isVisible: !form.isVisible };
     setForm(updated);
     try {
@@ -376,48 +1048,183 @@ function CardRow({
   };
 
   return (
-    <div className="border border-slate-700 rounded-xl overflow-hidden">
-      {/* Header — always visible */}
-      <div
-        className="flex items-center gap-3 px-4 py-3 bg-slate-800 cursor-pointer hover:bg-slate-700/60 select-none"
-        onClick={() => setOpen((o) => !o)}
-      >
-        <button
-          onClick={toggleVisible}
-          title={form.isVisible ? "公開中 → 非公開にする" : "非公開 → 公開にする"}
-          className={`flex-shrink-0 p-1 rounded hover:bg-slate-600 transition-colors ${
-            form.isVisible ? "text-emerald-400" : "text-slate-500"
-          }`}
+    <>
+      {showCrop && imagePreviewUrl && (
+        <CropModal
+          src={imagePreviewUrl}
+          onCrop={handleCropDone}
+          onClose={() => setShowCrop(false)}
+        />
+      )}
+
+      <div className="border border-slate-700 rounded-xl overflow-hidden">
+        {/* Header — always visible */}
+        <div
+          className="flex items-center gap-3 px-4 py-3 bg-slate-800 cursor-pointer hover:bg-slate-700/60 select-none"
+          onClick={() => setOpen((o) => !o)}
         >
-          {form.isVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
-        </button>
+          <button
+            onClick={toggleVisible}
+            title={form.isVisible ? "公開中 → 非公開にする" : "非公開 → 公開にする"}
+            className={`flex-shrink-0 p-1 rounded hover:bg-slate-600 transition-colors ${
+              form.isVisible ? "text-emerald-400" : "text-slate-500"
+            }`}
+          >
+            {form.isVisible ? <Eye className="w-4 h-4" /> : <EyeOff className="w-4 h-4" />}
+          </button>
 
-        <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-2 flex-wrap">
-            <span className="text-sm font-semibold text-white">{form.name}</span>
-            {!form.isVisible && (
-              <span className="text-xs bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded">
-                非公開
-              </span>
-            )}
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 flex-wrap">
+              <span className="text-sm font-semibold text-white">{form.name}</span>
+              {form.isDbOnly && (
+                <span className="text-xs bg-blue-900/60 text-blue-300 border border-blue-700/40 px-1.5 py-0.5 rounded">
+                  DB専用
+                </span>
+              )}
+              {!form.isVisible && (
+                <span className="text-xs bg-slate-700 text-slate-400 px-1.5 py-0.5 rounded">
+                  非公開
+                </span>
+              )}
+            </div>
+            <div className="text-xs text-slate-500 mt-0.5 truncate">
+              #{form.priorityRank ?? "—"} · {form.network} · FX:{" "}
+              {(form.fxFee ?? "").split("、")[0]?.split("（")[0] || "—"} · 還元:{" "}
+              {form.cashbackRate || "—"}
+            </div>
           </div>
-          <div className="text-xs text-slate-500 mt-0.5 truncate">
-            #{form.priorityRank ?? "—"} · {form.network} · FX:{" "}
-            {(form.fxFee ?? "").split("、")[0]?.split("（")[0] || "—"} · 還元:{" "}
-            {form.cashbackRate || "—"}
-          </div>
+
+          {/* Delete button (DB-only cards only) */}
+          {form.isDbOnly && onDelete && (
+            <div onClick={(e) => e.stopPropagation()}>
+              {confirmDelete ? (
+                <div className="flex items-center gap-1.5">
+                  <span className="text-xs text-red-400">「{form.name}」を削除？</span>
+                  <button
+                    onClick={handleDelete}
+                    disabled={deleting}
+                    className="text-xs px-2 py-1 bg-red-700 hover:bg-red-600 disabled:opacity-50 rounded text-white"
+                  >
+                    {deleting ? "削除中" : "削除"}
+                  </button>
+                  <button
+                    onClick={() => setConfirmDelete(false)}
+                    className="text-xs px-2 py-1 bg-slate-700 hover:bg-slate-600 rounded text-slate-300"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ) : (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  title="カードを削除"
+                  className="p-1.5 rounded hover:bg-red-900/40 text-slate-500 hover:text-red-400 transition-colors"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
+              )}
+            </div>
+          )}
+
+          {open ? (
+            <ChevronUp className="w-4 h-4 text-slate-400 flex-shrink-0" />
+          ) : (
+            <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
+          )}
         </div>
-
-        {open ? (
-          <ChevronUp className="w-4 h-4 text-slate-400 flex-shrink-0" />
-        ) : (
-          <ChevronDown className="w-4 h-4 text-slate-400 flex-shrink-0" />
-        )}
-      </div>
 
       {/* Edit form */}
       {open && (
         <div className="p-5 bg-slate-900 space-y-6">
+
+          {/* ── 券面画像 ── */}
+          <section>
+            <SectionHeading title="券面画像" />
+            <div className="space-y-3">
+              {/* Current image preview */}
+              {form.cardImage && !imagePreviewUrl && (
+                <div className="flex items-center gap-3 p-2 bg-slate-800 rounded-lg">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={form.cardImage}
+                    alt="現在の画像"
+                    className="h-12 rounded object-contain flex-shrink-0"
+                    onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = "none"; }}
+                  />
+                  <p className="text-xs text-slate-400 break-all font-mono truncate flex-1">{form.cardImage}</p>
+                </div>
+              )}
+
+              {/* Upload area */}
+              <div className="border border-dashed border-slate-600 rounded-xl p-4">
+                {!imagePreviewUrl ? (
+                  <div className="flex items-center gap-3">
+                    <button
+                      type="button"
+                      onClick={() => fileInputRef.current?.click()}
+                      className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      画像を選択
+                    </button>
+                    <span className="text-xs text-slate-500">PNG・JPEG・WebP・SVG</span>
+                    <input
+                      ref={fileInputRef}
+                      type="file"
+                      accept="image/*"
+                      className="hidden"
+                      onChange={handleFileSelect}
+                    />
+                  </div>
+                ) : (
+                  <div className="space-y-3">
+                    {/* eslint-disable-next-line @next/next/no-img-element */}
+                    <img
+                      src={imagePreviewUrl}
+                      alt="プレビュー"
+                      className="max-h-32 rounded-lg object-contain"
+                    />
+                    <div className="flex gap-2 flex-wrap">
+                      <button
+                        type="button"
+                        onClick={() => setShowCrop(true)}
+                        className="flex items-center gap-1 text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-300"
+                      >
+                        <Crop className="w-3 h-3" />
+                        トリミング
+                      </button>
+                      <button
+                        type="button"
+                        onClick={handleUpload}
+                        disabled={uploadingImage}
+                        className="flex items-center gap-1 text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 rounded-lg text-white"
+                      >
+                        <Upload className="w-3 h-3" />
+                        {uploadingImage ? "アップロード中..." : "アップロードして反映"}
+                      </button>
+                      <button
+                        type="button"
+                        onClick={resetImage}
+                        className="text-xs px-3 py-1.5 bg-slate-700 hover:bg-slate-600 rounded-lg text-slate-400"
+                      >
+                        リセット
+                      </button>
+                    </div>
+                    {croppedBlob && (
+                      <p className="text-xs text-emerald-400">✓ トリミング済み</p>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* Manual URL input */}
+              <Field
+                label="画像URL (直接入力も可)"
+                value={form.cardImage ?? ""}
+                onChange={(v) => set("cardImage", v)}
+              />
+            </div>
+          </section>
 
           {/* ── 基本情報 ── */}
           <section>
@@ -450,12 +1257,6 @@ function CardRow({
                 label="紹介URL (referralUrl)"
                 value={form.referralUrl ?? ""}
                 onChange={(v) => set("referralUrl", v)}
-                className="sm:col-span-2"
-              />
-              <Field
-                label="券面画像パス (cardImage) — 例: /cards/tria.png"
-                value={form.cardImage ?? ""}
-                onChange={(v) => set("cardImage", v)}
                 className="sm:col-span-2"
               />
             </div>
@@ -749,7 +1550,8 @@ function CardRow({
           </div>
         </div>
       )}
-    </div>
+      </div>
+    </>
   );
 }
 
@@ -1109,6 +1911,8 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
   const [revalidating, setRevalidating] = useState(false);
+  const [showNewCard, setShowNewCard] = useState(false);
+  const [health, setHealth] = useState<HealthResult | null>(null);
   const { toasts, show: showToast } = useToast();
 
   const loadCards = useCallback(async () => {
@@ -1124,13 +1928,38 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
     }
   }, [password]);
 
+  const loadHealth = useCallback(async () => {
+    try {
+      const res = await fetch("/api/admin/health");
+      const data = (await res.json()) as HealthResult;
+      setHealth(data);
+    } catch {
+      // Health check failure is non-critical; silently ignore
+    }
+  }, []);
+
   useEffect(() => {
     loadCards();
-  }, [loadCards]);
+    loadHealth();
+  }, [loadCards, loadHealth]);
 
   const saveCard = async (updated: AdminCard) => {
     await apiFetch("/api/admin/cards", "POST", password, updated);
     setCards((prev) => prev.map((c) => (c.id === updated.id ? updated : c)));
+  };
+
+  const deleteCard = async (slug: string) => {
+    const res = await fetch(`/api/admin/cards?slug=${encodeURIComponent(slug)}`, {
+      method: "DELETE",
+      headers: { Authorization: `Bearer ${password}` },
+    });
+    const json = (await res.json()) as { success: boolean; error?: string; blocked?: boolean };
+    if (!json.success) throw new Error(json.error ?? "削除失敗");
+    setCards((prev) => prev.filter((c) => c.slug !== slug));
+  };
+
+  const onCardCreated = (card: AdminCard) => {
+    setCards((prev) => [...prev, card]);
   };
 
   const revalidate = async () => {
@@ -1204,6 +2033,34 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
         {/* ── Cards tab ── */}
         {tab === "cards" && (
           <div>
+            {showNewCard && (
+              <NewCardModal
+                cardList={cards}
+                password={password}
+                onClose={() => setShowNewCard(false)}
+                onCreate={onCardCreated}
+                showToast={showToast}
+              />
+            )}
+
+            {/* Default password warning */}
+            {password === "admin2026" && (
+              <div className="mb-5 bg-amber-950/40 border border-amber-700 rounded-xl flex items-start gap-3 px-4 py-3">
+                <ShieldAlert className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
+                <div>
+                  <p className="text-sm font-semibold text-amber-300">デフォルトパスワードを使用中</p>
+                  <p className="text-xs text-amber-400 mt-0.5">
+                    本番環境では環境変数{" "}
+                    <code className="bg-amber-900/40 px-1 rounded font-mono">ADMIN_PASSWORD</code>{" "}
+                    を設定してください。誰でもログインできる状態です。
+                  </p>
+                </div>
+              </div>
+            )}
+
+            {/* Supabase setup warnings */}
+            {health && <SetupWarningBanner health={health} />}
+
             <div className="flex items-center justify-between mb-5">
               <div>
                 <h2 className="text-lg font-bold">カード管理</h2>
@@ -1211,14 +2068,23 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
                   カード行をクリックして展開 · 目のアイコンで公開/非公開を即切替 · 保存後に「キャッシュ更新」で即時反映
                 </p>
               </div>
-              <button
-                onClick={loadCards}
-                disabled={loading}
-                className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg transition-colors text-slate-400"
-              >
-                <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
-                再読込
-              </button>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={() => setShowNewCard(true)}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-blue-600 hover:bg-blue-500 rounded-lg transition-colors text-white font-medium"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  新規追加
+                </button>
+                <button
+                  onClick={loadCards}
+                  disabled={loading}
+                  className="flex items-center gap-1.5 text-xs px-3 py-1.5 bg-slate-800 hover:bg-slate-700 border border-slate-600 rounded-lg transition-colors text-slate-400"
+                >
+                  <RefreshCw className={`w-3.5 h-3.5 ${loading ? "animate-spin" : ""}`} />
+                  再読込
+                </button>
+              </div>
             </div>
 
             {loading ? (
@@ -1251,7 +2117,9 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
                   <CardRow
                     key={card.id}
                     card={card}
+                    password={password}
                     onSave={saveCard}
+                    onDelete={card.isDbOnly ? deleteCard : undefined}
                     showToast={showToast}
                   />
                 ))}

@@ -71,6 +71,13 @@ export async function POST(req: NextRequest) {
   if (!category || !Array.isArray(entries)) {
     return err("category と entries が必要です", 400);
   }
+  // 空配列はデータ消失リスクが高い誤操作 — API レベルで拒否する
+  if (entries.length === 0) {
+    return err(
+      "ランキングエントリーが 0 件です。誤操作防止のため保存を中止しました。エントリーを 1 件以上指定してください。",
+      400,
+    );
+  }
 
   try {
     const dbEntries = entries.map((e) => ({

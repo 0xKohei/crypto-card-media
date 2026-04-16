@@ -3,27 +3,27 @@ export const runtime = "edge";
 /**
  * GET /api/admin/health
  *
- * Supabase 接続・テーブル到達性を診断する軽量 API。
- * パスワード不要 (env 情報は存在フラグのみ返す — 値は一切含まない)。
+ * Supabase 接続・テーブル・カラム・Storage バケットを診断する。
+ * 認証不要 (値は一切含まない — 存在フラグのみ)。
  *
  * レスポンス例 (正常):
  * {
  *   "success": true,
- *   "env": { "hasUrl": true, "hasServiceRoleKey": true, "missing": [] },
- *   "database": {
- *     "connected": true,
- *     "cardsTableReachable": true,
- *     "rankingsTableReachable": true,
- *     "homepageFeaturedTableReachable": true
- *   }
+ *   "missing": [],
+ *   "database": { "connected": true, "cardsTableReachable": true, ... },
+ *   "schema": { "isDbOnlyColumnExists": true, "bucketExists": true }
  * }
  *
- * レスポンス例 (env 不足):
+ * レスポンス例 (未セットアップ):
  * {
  *   "success": false,
- *   "env": { "hasUrl": false, "hasServiceRoleKey": false, "missing": ["SUPABASE_URL...", "SUPABASE_SERVICE_ROLE_KEY"] },
- *   "database": null,
- *   "error": "Supabase is not configured. Missing: ..."
+ *   "missing": ["column:cards.is_db_only", "bucket:card-images"],
+ *   "database": { ... },
+ *   "schema": { "isDbOnlyColumnExists": false, "bucketExists": false },
+ *   "dashboard": {
+ *     "sqlUrl": "https://supabase.com/dashboard/project/xxx/sql",
+ *     "storageUrl": "https://supabase.com/dashboard/project/xxx/storage/buckets"
+ *   }
  * }
  */
 
@@ -39,23 +39,24 @@ export async function GET() {
     nodeEnv: diag.nodeEnv,
   };
 
-  // env が不足していたらここで終了
+  // env 不足時は即終了
   if (!diag.hasUrl || !diag.hasServiceRoleKey) {
-    const missingStr = diag.missing.join(", ");
     return NextResponse.json(
       {
         success: false,
         env: envResult,
         database: null,
-        error: `Supabase is not configured. Missing: ${missingStr}. .env.local を作成して NEXT_PUBLIC_SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY を設定してください。`,
+        schema: null,
+        missing: diag.missing.map((m) => `env:${m}`),
+        error: `Supabase が未設定です。Missing: ${diag.missing.join(", ")}`,
       },
       { status: 503 },
     );
   }
 
-  // 各テーブルに対して limit 1 の軽いクエリを実行
   const supabase = getSupabaseClient()!;
 
+  // ─── テーブル到達確認 ─────────────────────────────────────────
   async function pingTable(table: string): Promise<{ reachable: boolean; error?: string }> {
     try {
       const { error } = await supabase.from(table).select("*").limit(1);
@@ -66,37 +67,95 @@ export async function GET() {
     }
   }
 
-  const [cardsResult, rankingsResult, featuredResult] = await Promise.all([
-    pingTable("cards"),
-    pingTable("rankings"),
-    pingTable("homepage_featured"),
-  ]);
+  // ─── is_db_only カラム存在確認 ─────────────────────────────────
+  async function checkIsDbOnlyColumn(): Promise<boolean> {
+    try {
+      const { error } = await supabase.from("cards").select("is_db_only").limit(1);
+      if (!error) return true;
+      // カラムが存在しないときのエラーメッセージ例:
+      // "Could not find the 'is_db_only' column of 'cards' in the schema cache"
+      if (error.message.toLowerCase().includes("is_db_only")) return false;
+      // その他のエラー (テーブル自体がない等) は false 扱い
+      return false;
+    } catch {
+      return false;
+    }
+  }
 
-  const allReachable =
+  // ─── Storage バケット存在確認 ──────────────────────────────────
+  async function checkBucket(name: string): Promise<boolean> {
+    try {
+      const { error } = await supabase.storage.getBucket(name);
+      return error === null;
+    } catch {
+      return false;
+    }
+  }
+
+  // 並列実行
+  const [cardsResult, rankingsResult, featuredResult, isDbOnlyExists, bucketExists] =
+    await Promise.all([
+      pingTable("cards"),
+      pingTable("rankings"),
+      pingTable("homepage_featured"),
+      checkIsDbOnlyColumn(),
+      checkBucket("card-images"),
+    ]);
+
+  const tablesOk =
     cardsResult.reachable && rankingsResult.reachable && featuredResult.reachable;
 
-  const dbErrors = [
-    !cardsResult.reachable && `cards: ${cardsResult.error}`,
-    !rankingsResult.reachable && `rankings: ${rankingsResult.error}`,
-    !featuredResult.reachable && `homepage_featured: ${featuredResult.error}`,
-  ].filter(Boolean);
+  // missing リスト (管理画面の警告 UI が参照)
+  const missing: string[] = [];
+  if (!cardsResult.reachable) missing.push("table:cards");
+  if (!rankingsResult.reachable) missing.push("table:rankings");
+  if (!featuredResult.reachable) missing.push("table:homepage_featured");
+  if (!isDbOnlyExists) missing.push("column:cards.is_db_only");
+  if (!bucketExists) missing.push("bucket:card-images");
+
+  // Supabase ダッシュボード URL (project ref は URL から抽出)
+  const supabaseUrl =
+    process.env.SUPABASE_URL || process.env.NEXT_PUBLIC_SUPABASE_URL || "";
+  const projectRef = supabaseUrl
+    .replace("https://", "")
+    .replace(".supabase.co", "")
+    .split(".")[0];
+  const dashboardBase = projectRef
+    ? `https://supabase.com/dashboard/project/${projectRef}`
+    : null;
+
+  const success = tablesOk && isDbOnlyExists && bucketExists;
 
   return NextResponse.json(
     {
-      success: allReachable,
+      success,
       env: envResult,
       database: {
-        connected: allReachable || cardsResult.reachable || rankingsResult.reachable || featuredResult.reachable,
+        connected: cardsResult.reachable || rankingsResult.reachable || featuredResult.reachable,
         cardsTableReachable: cardsResult.reachable,
         rankingsTableReachable: rankingsResult.reachable,
         homepageFeaturedTableReachable: featuredResult.reachable,
-        ...(dbErrors.length > 0 && { errors: dbErrors }),
+        isDbOnlyColumnExists: isDbOnlyExists,
+        bucketExists,
+        ...(cardsResult.error && { cardsError: cardsResult.error }),
+        ...(rankingsResult.error && { rankingsError: rankingsResult.error }),
+        ...(featuredResult.error && { featuredError: featuredResult.error }),
       },
-      ...(dbErrors.length > 0 && {
-        error:
-          "一部のテーブルに接続できませんでした。supabase-schema.sql を Supabase SQL エディタで実行してください。",
+      schema: {
+        isDbOnlyColumnExists: isDbOnlyExists,
+        bucketExists,
+      },
+      missing,
+      ...(dashboardBase && {
+        dashboard: {
+          sqlUrl: `${dashboardBase}/sql`,
+          storageUrl: `${dashboardBase}/storage/buckets`,
+        },
+      }),
+      ...(!success && {
+        error: `${missing.length}件のセットアップが未完了です: ${missing.join(", ")}`,
       }),
     },
-    { status: allReachable ? 200 : 503 },
+    { status: success ? 200 : 503 },
   );
 }

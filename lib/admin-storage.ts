@@ -23,6 +23,7 @@ export interface DbCardOverride {
   fees?: Record<string, unknown> | null;  // 手数料・機能・その他の上書き値
   tags?: string[] | null;
   visible?: boolean | null;
+  is_db_only?: boolean | null;  // true = data/cards.ts に存在しない DB 専用カード
   updated_at?: string;
 }
 
@@ -97,12 +98,49 @@ export async function upsertCardOverride(row: DbCardOverride): Promise<void> {
 }
 
 /**
- * カードオーバーライドを削除 (静的データのデフォルトに戻る)。
+ * カードオーバーライドを削除。
+ * is_db_only=true のカードのみ対象。静的カードのオーバーライド削除は deleteCardOverride ではなく
+ * upsertCardOverride で visible=false を設定すること。
  */
 export async function deleteCardOverride(slug: string): Promise<void> {
   const supabase = requireWrite();
   const { error } = await supabase.from("cards").delete().eq("slug", slug);
   if (error) throw new Error(`cards delete 失敗: ${error.message}`);
+}
+
+/**
+ * 指定 slug のカードが rankings または homepage_featured から参照されているか確認する。
+ * 参照がある場合は参照元情報の配列を返す。空配列なら削除可能。
+ */
+export async function checkCardReferences(
+  slug: string,
+): Promise<Array<{ table: string; detail: string }>> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return [];
+
+  const results: Array<{ table: string; detail: string }> = [];
+
+  const [{ data: rankingRefs }, { data: featuredRefs }] = await Promise.all([
+    supabase.from("rankings").select("category, rank").eq("card_slug", slug),
+    supabase.from("homepage_featured").select("slot").eq("card_slug", slug),
+  ]);
+
+  for (const r of rankingRefs ?? []) {
+    const row = r as { category: string; rank: number };
+    results.push({
+      table: "rankings",
+      detail: `ランキング「${row.category}」の ${row.rank} 位`,
+    });
+  }
+  for (const r of featuredRefs ?? []) {
+    const row = r as { slot: number };
+    results.push({
+      table: "homepage_featured",
+      detail: `トップ掲載スロット ${row.slot}`,
+    });
+  }
+
+  return results;
 }
 
 // ─── rankings テーブル ────────────────────────────────────────────
@@ -127,22 +165,45 @@ export async function getRankings(category = "overall"): Promise<DbRankingEntry[
 }
 
 /**
- * ランキングを一括更新 (既存エントリーを削除して再挿入)。
+ * ランキングを一括更新。
+ *
+ * 旧実装 (delete → insert) はネットワーク断/INSERT失敗時にデータ全消失するリスクがあった。
+ * 新実装: upsert → prune の2段階で原子性を確保する。
+ *   1. upsert: 既存行を上書き + 新規行を挿入 (失敗しても既存データは残る)
+ *   2. prune : 新リストにない rank 行を削除 (失敗しても余分な行が残るだけ — データ消失なし)
+ *
+ * 空配列は誤操作防止のためエラーにする。
  */
 export async function setRankings(
   category: string,
   entries: Omit<DbRankingEntry, "id">[],
 ): Promise<void> {
+  if (entries.length === 0) {
+    throw new Error(
+      "ランキングエントリーが 0 件です。誤操作防止のため保存を中止しました。エントリーを 1 件以上指定してください。",
+    );
+  }
+
   const supabase = requireWrite();
-  const { error: delErr } = await supabase
+  const rows = entries.map((e) => ({ ...e, category }));
+
+  // Step 1: upsert — 失敗しても既存データは一切消えない
+  const { error: upsertErr } = await supabase
+    .from("rankings")
+    .upsert(rows, { onConflict: "category,rank" });
+  if (upsertErr) throw new Error(`rankings upsert 失敗: ${upsertErr.message}`);
+
+  // Step 2: prune — 新リストにない rank 行を削除
+  // 失敗しても旧行が残るだけ (データ消失なし) なので console.error で記録のみ
+  const newRanks = entries.map((e) => e.rank);
+  const { error: pruneErr } = await supabase
     .from("rankings")
     .delete()
-    .eq("category", category);
-  if (delErr) throw new Error(`rankings delete 失敗: ${delErr.message}`);
-  if (entries.length === 0) return;
-  const rows = entries.map((e) => ({ ...e, category }));
-  const { error: insErr } = await supabase.from("rankings").insert(rows);
-  if (insErr) throw new Error(`rankings insert 失敗: ${insErr.message}`);
+    .eq("category", category)
+    .not("rank", "in", `(${newRanks.join(",")})`);
+  if (pruneErr) {
+    console.error("[admin-storage] setRankings prune 失敗 (非致命的):", pruneErr.message);
+  }
 }
 
 // ─── homepage_featured テーブル ───────────────────────────────────
