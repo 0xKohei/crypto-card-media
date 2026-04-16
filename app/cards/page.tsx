@@ -1,7 +1,9 @@
 import type { Metadata } from "next";
-import { cards } from "@/data/cards";
+import { getCards } from "@/lib/get-cards";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import CardsClient from "./CardsClient";
+
+export const revalidate = 60;
 
 export const metadata: Metadata = {
   title: "クリプトカード一覧・比較表",
@@ -10,6 +12,8 @@ export const metadata: Metadata = {
 };
 
 export default function CardsPage() {
+  const cards = getCards();
+
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
       <Breadcrumb items={[{ label: "カード一覧" }]} />

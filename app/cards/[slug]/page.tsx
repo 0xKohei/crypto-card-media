@@ -101,9 +101,6 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
               )}
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
-                  {card.isSponsor && (
-                    <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full">PR</span>
-                  )}
                   {card.keyStrength && (
                     <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full border border-white/30">
                       {card.keyStrength}

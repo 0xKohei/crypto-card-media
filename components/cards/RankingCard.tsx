@@ -1,0 +1,81 @@
+import Link from "next/link";
+import type { Card } from "@/types";
+import CardArtwork from "@/components/cards/CardArtwork";
+import { ChevronRight } from "lucide-react";
+
+interface RankingCardProps {
+  card: Card;
+  rank: number;
+  reason: string;
+  shortReason?: string;
+  keyStrength?: string;
+}
+
+const rankStyles: Record<number, { badge: string; bar: string }> = {
+  1: { badge: "bg-amber-400 text-amber-950 shadow-amber-200", bar: "bg-amber-400" },
+  2: { badge: "bg-slate-300 text-slate-800 shadow-slate-200", bar: "bg-slate-400" },
+  3: { badge: "bg-orange-400/90 text-white shadow-orange-200", bar: "bg-orange-400" },
+};
+
+export default function RankingCard({
+  card,
+  rank,
+  reason,
+  shortReason,
+  keyStrength,
+}: RankingCardProps) {
+  const style = rankStyles[rank] ?? { badge: "bg-slate-700 text-white shadow-slate-200", bar: "bg-slate-700" };
+
+  return (
+    <article className="flex items-stretch gap-0 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-[0_8px_24px_rgba(15,23,42,0.07)] transition-all hover:border-blue-200 hover:shadow-[0_12px_32px_rgba(15,23,42,0.10)]">
+      {/* Rank bar */}
+      <div className={`w-1 flex-shrink-0 ${style.bar}`} />
+
+      {/* Card image */}
+      <div className="w-[140px] sm:w-[180px] flex-shrink-0 self-stretch">
+        <CardArtwork
+          card={card}
+          className="h-full w-full rounded-none"
+          fallbackClassName="text-2xl"
+        />
+      </div>
+
+      {/* Content */}
+      <div className="flex min-w-0 flex-1 flex-col justify-center gap-1.5 px-4 py-4 sm:px-5">
+        {/* Rank + name row */}
+        <div className="flex items-center gap-2.5">
+          <span
+            className={`inline-flex h-8 min-w-8 items-center justify-center rounded-xl px-2 text-sm font-black shadow-sm ${style.badge}`}
+          >
+            {rank}
+          </span>
+          <h3 className="truncate text-base font-bold leading-tight text-slate-900 sm:text-lg">
+            {card.name}
+          </h3>
+        </div>
+
+        {/* Key strength */}
+        {keyStrength && (
+          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-600">
+            {keyStrength}
+          </p>
+        )}
+
+        {/* Reason (most important) */}
+        <p className="line-clamp-2 text-sm leading-relaxed text-slate-600">
+          {shortReason ?? reason}
+        </p>
+
+        {/* CTA */}
+        <div className="mt-1">
+          <Link
+            href={`/cards/${card.slug}`}
+            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800"
+          >
+            詳細を見る <ChevronRight className="h-3.5 w-3.5" />
+          </Link>
+        </div>
+      </div>
+    </article>
+  );
+}

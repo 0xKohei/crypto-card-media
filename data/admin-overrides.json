@@ -1,0 +1,122 @@
+{
+  "cards": [
+    {
+      "id": "tria",
+      "isVisible": true,
+      "name": "Tria",
+      "shortDescription": "担保設定したデジタル資産をもとに使うVisaカード。Virtual / Plastic / Metalの3種類が公式規約で開示されています。",
+      "cardImage": "/cards/tria.png",
+      "referralUrl": "https://www.tria.so/ja",
+      "network": "Visa",
+      "tags": ["セルフカストディ", "担保型", "Visa", "国際規約あり", "DeFi"],
+      "keyStrength": "担保型カード",
+      "priorityRank": 1
+    },
+    {
+      "id": "kast",
+      "isVisible": true,
+      "name": "Kast",
+      "shortDescription": "USDC / ステーブルコインをUSD残高として使うカード。公式ヘルプセンターに手数料・ATM・限度額が細かく公開されています。",
+      "cardImage": "/cards/kast.png",
+      "referralUrl": "https://www.kast.xyz",
+      "network": "Visa",
+      "tags": ["USDC", "ステーブルコイン", "KAST Points", "FX手数料0%", "料金表公開"],
+      "keyStrength": "FX手数料0%",
+      "priorityRank": 2
+    },
+    {
+      "id": "redotpay",
+      "isVisible": true,
+      "name": "RedotPay",
+      "shortDescription": "シンプルなクリプト決済カード。バーチャル$10、物理カード$100。世界中のVisa加盟店で利用可能。",
+      "cardImage": "/cards/redotpay.png",
+      "referralUrl": "https://www.redotpay.com",
+      "network": "Visa",
+      "tags": ["シンプル", "USDT", "バーチャルカード", "グローバル"],
+      "keyStrength": "低コスト発行",
+      "priorityRank": 3
+    },
+    {
+      "id": "tevau",
+      "isVisible": true,
+      "name": "Tevau",
+      "shortDescription": "Tevauの公開APIドキュメントでカード作成、KYC、カード手数料照会の機能が確認できるカードサービス。",
+      "cardImage": "/cards/tevau.png",
+      "referralUrl": "https://tevau.io",
+      "network": "Other",
+      "tags": ["公開APIあり", "KYC", "カード作成", "料金非開示"],
+      "keyStrength": "料金非開示",
+      "priorityRank": 4
+    },
+    {
+      "id": "bitget-wallet-card",
+      "isVisible": true,
+      "name": "Bitget Wallet Card",
+      "shortDescription": "Bitget Wallet内で使うVisaデビットカード。公式ヘルプセンターに地域別の申込条件・手数料・0-fee特典が公開されています。",
+      "cardImage": "/cards/bitget-wallet-card.png",
+      "referralUrl": "https://web3.bitget.com",
+      "network": "Visa",
+      "tags": ["Visa", "0-fee cashback", "Apple Pay", "Google Pay", "Bitget"],
+      "keyStrength": "0-fee benefit",
+      "priorityRank": 5
+    },
+    {
+      "id": "jupiter-global",
+      "isVisible": true,
+      "name": "Jupiter Global",
+      "shortDescription": "USDCをUSD残高として使うJupiterのVisaデビットカード。公式FAQに手数料、カード種別、KYC、物理カード有無が公開されています。",
+      "cardImage": "/cards/jupiter-global.png",
+      "referralUrl": "https://landing.global.jup.ag",
+      "network": "Visa",
+      "tags": ["Solana", "USDC only", "Visa", "Digital-only", "Jupiter Global"],
+      "keyStrength": "USDC only",
+      "priorityRank": 6
+    }
+  ],
+  "rankings": {
+    "overall": [
+      {
+        "rank": 1,
+        "cardSlug": "tria",
+        "reason": "国際カード規約でカード発行費・FX・ATM関連手数料が明示されている担保型カード。Virtual / Plastic / Metalの3種が用意されています。",
+        "shortReason": "総合バランスが最も高い担保型カード。",
+        "keyStrength": "担保型カード"
+      },
+      {
+        "rank": 2,
+        "cardSlug": "kast",
+        "reason": "公式ヘルプセンターで料金表・ATM条件・利用上限が公開されており、USD建てカード決済0%が明確なステーブルコイン系カードです。",
+        "shortReason": "料金表の透明性が高く、USD決済0%が明確。",
+        "keyStrength": "料金表公開"
+      },
+      {
+        "rank": 3,
+        "cardSlug": "bitget-wallet-card",
+        "reason": "地域別の申込条件と0-fee benefitの仕組みがヘルプセンターで確認できるVisaデビットカード。Apple Pay / Google Payに対応します。",
+        "shortReason": "申込条件と0-fee benefitが分かりやすい。",
+        "keyStrength": "0-fee benefit"
+      },
+      {
+        "rank": 4,
+        "cardSlug": "redotpay",
+        "reason": "発行手数料、月額・年会費なし、ATM出金、Apple Pay対応などの条件が公式ヘルプセンターで確認でき、情報の見通しが良いカードです。",
+        "shortReason": "低コストで始めやすく、条件の見通しが良い。",
+        "keyStrength": "低コスト発行"
+      },
+      {
+        "rank": 5,
+        "cardSlug": "jupiter-global",
+        "reason": "FAQでUSDC-only、年会費0、物理カードなし、発行体別のFX条件まで明示されたJupiter Globalのデジタルカードです。",
+        "shortReason": "USDC専用で、利用条件を追いやすいデジタルカード。",
+        "keyStrength": "USDC only"
+      },
+      {
+        "rank": 6,
+        "cardSlug": "tevau",
+        "reason": "公開APIドキュメントでカード作成やKYC、手数料照会エンドポイントは確認できますが、利用者向け料金表は公開確認できませんでした。",
+        "shortReason": "API情報はある一方、利用者向け料金表が見えにくい。",
+        "keyStrength": "料金非開示"
+      }
+    ]
+  }
+}

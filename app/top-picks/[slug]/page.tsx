@@ -123,9 +123,6 @@ export default function TopPickDetailPage({ params }: { params: { slug: string }
                       {entry.keyStrength}
                     </span>
                   )}
-                  {card.isSponsor && (
-                    <span className="text-xs text-gray-400 bg-gray-100 px-1.5 py-0.5 rounded">PR</span>
-                  )}
                 </div>
               </div>
 

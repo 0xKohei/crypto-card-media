@@ -52,8 +52,8 @@ export default function ShowcaseCard({
           fallbackClassName="text-2xl"
         />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/18 to-transparent" />
-        <div className="absolute left-3 top-3 flex items-start gap-2">
-          {typeof rank === "number" && (
+        {typeof rank === "number" && (
+          <div className="absolute left-3 top-3">
             <span
               className={cn(
                 "inline-flex h-9 min-w-9 items-center justify-center rounded-xl px-2 text-sm font-black shadow-sm",
@@ -62,13 +62,8 @@ export default function ShowcaseCard({
             >
               {rank}
             </span>
-          )}
-          {card.isSponsor && (
-            <span className="rounded-full border border-white/15 bg-black/60 px-2 py-1 text-[11px] font-medium text-white backdrop-blur-sm">
-              PR
-            </span>
-          )}
-        </div>
+          </div>
+        )}
       </div>
 
       <div className="space-y-4 p-4 sm:p-5">
