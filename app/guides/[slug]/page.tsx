@@ -12,6 +12,8 @@ import { Clock, RefreshCw, AlertCircle } from "lucide-react";
 
 const guideCategories = ["beginner-guide", "comparison", "review", "opinion"];
 
+export const dynamic = "force-static";
+
 export async function generateStaticParams() {
   return articles
     .filter((a) => guideCategories.includes(a.category))

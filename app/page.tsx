@@ -20,7 +20,7 @@ import {
   Info,
 } from "lucide-react";
 
-export const revalidate = 60;
+export const dynamic = "force-static";
 
 export const metadata: Metadata = {
   title: "クリプトカード比較メディア | グローバル金融メディア CryptoCardNavi",

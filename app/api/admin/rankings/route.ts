@@ -1,5 +1,8 @@
+export const runtime = "edge";
+
 import { NextRequest, NextResponse } from "next/server";
-import { readAdminOverrides, writeAdminOverrides } from "@/lib/get-cards";
+import { readOverrides, writeOverrides } from "@/lib/admin-storage";
+import type { AdminRankingEntry } from "@/lib/admin-storage";
 import { revalidatePath } from "next/cache";
 
 function checkAuth(req: NextRequest): boolean {
@@ -14,7 +17,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const category = req.nextUrl.searchParams.get("category") ?? "overall";
-  const data = await readAdminOverrides();
+  const data = await readOverrides();
   return NextResponse.json(data.rankings[category] ?? []);
 }
 
@@ -24,15 +27,15 @@ export async function POST(req: NextRequest) {
   if (!checkAuth(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const body = await req.json();
+  const body = (await req.json()) as { category: string; entries: AdminRankingEntry[] };
   const { category, entries } = body;
   if (!category || !Array.isArray(entries)) {
     return NextResponse.json({ error: "category and entries required" }, { status: 400 });
   }
 
-  const data = await readAdminOverrides();
+  const data = await readOverrides();
   data.rankings[category] = entries;
-  await writeAdminOverrides(data);
+  await writeOverrides(data);
 
   revalidatePath("/");
   revalidatePath("/top-picks/overall");

@@ -18,6 +18,8 @@ const blogCategories = [
   "ecosystem",
 ];
 
+export const dynamic = "force-static";
+
 export async function generateStaticParams() {
   return articles
     .filter((a) => blogCategories.includes(a.category))

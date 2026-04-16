@@ -18,6 +18,8 @@ import {
   ChevronRight,
 } from "lucide-react";
 
+export const dynamic = "force-static";
+
 export async function generateStaticParams() {
   return topPicks.map((tp) => ({ slug: tp.slug }));
 }

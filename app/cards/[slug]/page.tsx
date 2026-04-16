@@ -30,6 +30,8 @@ import {
   Calendar,
 } from "lucide-react";
 
+export const dynamic = "force-static";
+
 export async function generateStaticParams() {
   return cards.map((c) => ({ slug: c.slug }));
 }

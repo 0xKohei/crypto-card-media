@@ -1,5 +1,3 @@
-import fs from "fs";
-import path from "path";
 import { cards as staticCards } from "@/data/cards";
 import { getSupabaseClient, OVERRIDES_ROW_ID } from "@/lib/supabase";
 import type { Card } from "@/types";
@@ -30,23 +28,36 @@ export interface AdminOverrides {
   rankings: Record<string, AdminRankingEntry[]>;
 }
 
-const OVERRIDES_PATH = path.join(process.cwd(), "data", "admin-overrides.json");
-
 // ---------------------------------------------------------------------------
-// Local JSON helpers (dev / VPS fallback)
+// Local JSON helpers — Node.js only, used only during build / dev.
+// Uses require() inside function body so Edge bundlers don't statically analyze it.
 // ---------------------------------------------------------------------------
 
 function readLocalOverrides(): AdminOverrides {
   try {
-    const raw = fs.readFileSync(OVERRIDES_PATH, "utf-8");
-    return JSON.parse(raw);
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require("fs") as typeof import("fs");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require("path") as typeof import("path");
+    const filePath = path.join(process.cwd(), "data", "admin-overrides.json");
+    const raw = fs.readFileSync(filePath, "utf-8");
+    return JSON.parse(raw) as AdminOverrides;
   } catch {
     return { cards: [], rankings: {} };
   }
 }
 
 function writeLocalOverrides(data: AdminOverrides): void {
-  fs.writeFileSync(OVERRIDES_PATH, JSON.stringify(data, null, 2), "utf-8");
+  try {
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const fs = require("fs") as typeof import("fs");
+    // eslint-disable-next-line @typescript-eslint/no-require-imports
+    const path = require("path") as typeof import("path");
+    const filePath = path.join(process.cwd(), "data", "admin-overrides.json");
+    fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
+  } catch {
+    // no-op in environments without fs (Edge Runtime, etc.)
+  }
 }
 
 // ---------------------------------------------------------------------------
@@ -68,15 +79,14 @@ async function readSupabaseOverrides(): Promise<AdminOverrides | null> {
 async function writeSupabaseOverrides(overrides: AdminOverrides): Promise<void> {
   const supabase = getSupabaseClient();
   if (!supabase) throw new Error("Supabase not configured");
-  const { error } = await supabase.from("admin_overrides").upsert({
-    id: OVERRIDES_ROW_ID,
-    data: overrides,
-  });
+  const { error } = await supabase
+    .from("admin_overrides")
+    .upsert({ id: OVERRIDES_ROW_ID, data: overrides });
   if (error) throw new Error(`Supabase write failed: ${error.message}`);
 }
 
 // ---------------------------------------------------------------------------
-// Public API — async reads/writes, Supabase preferred, JSON fallback
+// Public API — async, Supabase preferred, local JSON fallback
 // ---------------------------------------------------------------------------
 
 export async function readAdminOverrides(): Promise<AdminOverrides> {
@@ -95,7 +105,7 @@ export async function writeAdminOverrides(data: AdminOverrides): Promise<void> {
 }
 
 // ---------------------------------------------------------------------------
-// Card data getters
+// Card data getters (used by Server Components at build time)
 // ---------------------------------------------------------------------------
 
 export async function getCards(): Promise<(Card & { isVisible?: boolean })[]> {

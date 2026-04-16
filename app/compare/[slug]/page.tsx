@@ -16,6 +16,8 @@ import {
 import { CheckCircle, XCircle, ExternalLink, AlertCircle } from "lucide-react";
 import type { Card } from "@/types";
 
+export const dynamic = "force-static";
+
 export async function generateStaticParams() {
   return comparisons.map((c) => ({ slug: c.slug }));
 }

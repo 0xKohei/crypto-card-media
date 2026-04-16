@@ -1,5 +1,8 @@
+export const runtime = "edge";
+
 import { NextRequest, NextResponse } from "next/server";
-import { readAdminOverrides, writeAdminOverrides } from "@/lib/get-cards";
+import { readOverrides, writeOverrides } from "@/lib/admin-storage";
+import type { AdminCardOverride } from "@/lib/admin-storage";
 import { revalidatePath } from "next/cache";
 
 function checkAuth(req: NextRequest): boolean {
@@ -13,7 +16,7 @@ export async function GET(req: NextRequest) {
   if (!checkAuth(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const data = await readAdminOverrides();
+  const data = await readOverrides();
   return NextResponse.json(data.cards);
 }
 
@@ -22,19 +25,19 @@ export async function POST(req: NextRequest) {
   if (!checkAuth(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const body = await req.json();
+  const body = (await req.json()) as AdminCardOverride;
   if (!body.id) {
     return NextResponse.json({ error: "id is required" }, { status: 400 });
   }
 
-  const data = await readAdminOverrides();
+  const data = await readOverrides();
   const idx = data.cards.findIndex((c) => c.id === body.id);
   if (idx >= 0) {
     data.cards[idx] = { ...data.cards[idx], ...body };
   } else {
     data.cards.push(body);
   }
-  await writeAdminOverrides(data);
+  await writeOverrides(data);
 
   revalidatePath("/");
   revalidatePath("/cards");
@@ -54,9 +57,9 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "id is required" }, { status: 400 });
   }
 
-  const data = await readAdminOverrides();
+  const data = await readOverrides();
   data.cards = data.cards.filter((c) => c.id !== id);
-  await writeAdminOverrides(data);
+  await writeOverrides(data);
 
   revalidatePath("/");
   revalidatePath("/cards");
