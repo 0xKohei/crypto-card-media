@@ -5,14 +5,42 @@ import type { Card } from "@/types";
 export interface AdminCardOverride {
   id: string;
   isVisible?: boolean;
+  // Basic
   name?: string;
   shortDescription?: string;
+  longDescription?: string;
   cardImage?: string;
   referralUrl?: string;
   network?: string;
   tags?: string[];
   keyStrength?: string;
   priorityRank?: number;
+  // Fees
+  fxFee?: string;
+  cashbackRate?: string;
+  cashbackDetails?: string;
+  issuanceFee?: string;
+  monthlyFee?: string;
+  annualFee?: string;
+  atmFee?: string;
+  spendingLimit?: string;
+  // Features
+  applePay?: boolean;
+  googlePay?: boolean;
+  physicalCard?: boolean;
+  virtualCard?: boolean;
+  stablecoinSupport?: boolean;
+  // Arrays
+  regionAvailability?: string[];
+  topupMethods?: string[];
+  supportedAssets?: string[];
+  supportedChains?: string[];
+  pros?: string[];
+  cons?: string[];
+  useCases?: string[];
+  // Other
+  custodyType?: string;
+  kycLevel?: string;
 }
 
 export interface AdminRankingEntry {
@@ -30,7 +58,7 @@ export interface AdminOverrides {
 
 // ---------------------------------------------------------------------------
 // Local JSON helpers — Node.js only, used only during build / dev.
-// Uses require() inside function body so Edge bundlers don't statically analyze it.
+// require() inside function body keeps Edge bundlers from statically analyzing it.
 // ---------------------------------------------------------------------------
 
 function readLocalOverrides(): AdminOverrides {
@@ -56,7 +84,7 @@ function writeLocalOverrides(data: AdminOverrides): void {
     const filePath = path.join(process.cwd(), "data", "admin-overrides.json");
     fs.writeFileSync(filePath, JSON.stringify(data, null, 2), "utf-8");
   } catch {
-    // no-op in environments without fs (Edge Runtime, etc.)
+    // no-op in environments without fs
   }
 }
 

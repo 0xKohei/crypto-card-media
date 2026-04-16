@@ -1,8 +1,9 @@
 export const runtime = "edge";
 
 import { NextRequest, NextResponse } from "next/server";
+import { cards as staticCards } from "@/data/cards";
 import { readOverrides, writeOverrides } from "@/lib/admin-storage";
-import type { AdminCardOverride } from "@/lib/admin-storage";
+import type { AdminCardOverride } from "@/lib/get-cards";
 import { revalidatePath } from "next/cache";
 
 function checkAuth(req: NextRequest): boolean {
@@ -11,16 +12,31 @@ function checkAuth(req: NextRequest): boolean {
   return authHeader === `Bearer ${password}`;
 }
 
-// GET /api/admin/cards - list all card overrides
+/**
+ * GET /api/admin/cards
+ * Returns ALL cards — static data from data/cards.ts merged with admin overrides.
+ * This ensures admin always sees all cards (never 0 due to empty Supabase).
+ */
 export async function GET(req: NextRequest) {
   if (!checkAuth(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const data = await readOverrides();
-  return NextResponse.json(data.cards);
+
+  const overrides = await readOverrides();
+
+  const merged = staticCards.map((card) => {
+    const ov = overrides.cards.find((c) => c.id === card.id);
+    if (!ov) return { ...card, isVisible: true };
+    return { ...card, ...ov };
+  });
+
+  return NextResponse.json(merged);
 }
 
-// POST /api/admin/cards - update a card override (upsert by id)
+/**
+ * POST /api/admin/cards
+ * Upsert a card override. Accepts full card data — all editable fields.
+ */
 export async function POST(req: NextRequest) {
   if (!checkAuth(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
@@ -47,7 +63,10 @@ export async function POST(req: NextRequest) {
   return NextResponse.json({ ok: true });
 }
 
-// DELETE /api/admin/cards?id=xxx - remove a card override
+/**
+ * DELETE /api/admin/cards?id=xxx
+ * Remove a card override (restores static default).
+ */
 export async function DELETE(req: NextRequest) {
   if (!checkAuth(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
