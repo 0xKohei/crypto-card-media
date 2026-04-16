@@ -9,7 +9,7 @@ import { Trophy, ArrowRight } from "lucide-react";
 export const metadata: Metadata = {
   title: "クリプトカード用途別ランキング一覧",
   description:
-    "総合おすすめ・高還元・日本ユーザー向け・海外利用・USDT活用・出金性重視など用途別のクリプトカードランキング。選定基準と根拠を明示した中立的なランキングです。",
+    "総合おすすめ・日本ユーザー向け・DeFi向け・USDT活用向け・海外利用向けのランキング一覧。掲載中の6カードを用途別に整理しています。",
 };
 
 export default function TopPicksPage() {
@@ -22,7 +22,7 @@ export default function TopPicksPage() {
           クリプトカード 用途別ランキング
         </h1>
         <p className="text-gray-600 leading-relaxed">
-          目的・用途に合わせてランキングを確認できます。各ランキングには選定基準・スコアリング方法・選ばれた理由を明示しています。
+          掲載中の6カードを用途ごとに見比べられます。ランキングごとに重視している観点と選定理由をまとめています。
         </p>
       </div>
 
@@ -96,7 +96,7 @@ export default function TopPicksPage() {
       <div className="mt-12 bg-gray-50 rounded-2xl p-6">
         <h2 className="font-bold text-gray-900 mb-3">ランキングの選定基準について</h2>
         <p className="text-sm text-gray-600 leading-relaxed">
-          各ランキングは編集部が設定したスコアリング基準に基づいて作成されています。手数料・対応地域・KYC要件・還元率・セキュリティなど複数の項目を評価しており、特定のサービスを恣意的に優遇するものではありません。
+          各ランキングは掲載中の6カードを対象に、手数料・対応地域・KYC要件・ウォレット管理方式・日常利用のしやすさを見ながら整理しています。
           ただし、一部リンクにはアフィリエイト（紹介報酬）が含まれる場合があります。詳細は
           <Link href="/disclaimer" className="text-blue-600 hover:underline mx-1">免責事項</Link>
           をご覧ください。

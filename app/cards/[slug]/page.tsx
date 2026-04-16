@@ -9,6 +9,7 @@ import Breadcrumb from "@/components/layout/Breadcrumb";
 import Badge from "@/components/common/Badge";
 import FAQ from "@/components/common/FAQ";
 import ArticleCard from "@/components/articles/ArticleCard";
+import CardArtwork from "@/components/cards/CardArtwork";
 import {
   regionLabels,
   kycLabels,
@@ -87,15 +88,14 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
           <div className={`bg-gradient-to-br ${card.coverColor} rounded-2xl p-6 sm:p-8 text-white mb-6`}>
             <div className="flex flex-col sm:flex-row items-start gap-5">
               {/* Card image or logo */}
-              {card.image ? (
-                <div className="w-full sm:w-52 flex-shrink-0">
-                  <img
-                    src={card.image}
-                    alt={card.name}
-                    className="w-full rounded-xl shadow-lg object-cover"
-                    style={{ aspectRatio: "420/265" }}
-                  />
-                </div>
+              {card.cardImage ?? card.image ? (
+                <CardArtwork
+                  card={card}
+                  className="w-full sm:w-72 flex-shrink-0"
+                  imageClassName="rounded-[18px]"
+                  fallbackClassName="rounded-xl text-3xl"
+                  paddingClassName="p-5 sm:p-6"
+                />
               ) : (
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">
                   {card.logo}
@@ -264,9 +264,12 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
         <div className="mt-8 lg:mt-0 space-y-6">
           {/* Main CTA */}
           <div className="bg-white border-2 border-blue-100 rounded-2xl p-6 sticky top-24">
-            <div className={`h-16 bg-gradient-to-br ${card.coverColor} rounded-xl flex items-center justify-center text-3xl mb-4`}>
-              {card.logo}
-            </div>
+            <CardArtwork
+              card={card}
+              className="mb-4 shadow-sm"
+              imageClassName="rounded-xl"
+              fallbackClassName="rounded-xl text-3xl"
+            />
             <h3 className="font-bold text-gray-900 text-lg mb-1">{card.name}</h3>
             {card.keyStrength && (
               <p className="text-sm text-blue-600 font-medium mb-4">{card.keyStrength}</p>

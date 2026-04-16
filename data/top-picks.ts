@@ -14,43 +14,43 @@ export const topPicks: TopPick[] = [
         rank: 1,
         cardSlug: "tria",
         reason:
-          "1,000以上のトークン対応・150カ国以上利用可能・非カストディ・Apple Pay対応。最大6%キャッシュバックを提供するグローバル対応カード。",
-        keyStrength: "マルチトークン対応",
+          "国際カード規約でカード発行費・FX・ATM関連手数料が明示されている担保型カード。Virtual / Plastic / Metalの3種が用意されています。",
+        keyStrength: "担保型カード",
       },
       {
         rank: 2,
         cardSlug: "kast",
         reason:
-          "USDC決済でFX手数料0%。シーズン制キャッシュバックで最大8%＋$MOVEトークンの追加報酬。ステーブルコイン活用に最適。",
-        keyStrength: "FX手数料0%",
+          "公式ヘルプセンターで料金表・ATM条件・利用上限が公開されており、USD建てカード決済0%が明確なステーブルコイン系カードです。",
+        keyStrength: "料金表公開",
       },
       {
         rank: 3,
         cardSlug: "bitget-wallet-card",
         reason:
-          "非カストディ型で月$400まで手数料実質無料。KYC完了で5 USDCボーナス。EU・アジア圏に対応。",
-        keyStrength: "非カストディ",
+          "地域別の申込条件と0-fee benefitの仕組みがヘルプセンターで確認できるVisaデビットカード。Apple Pay / Google Payに対応します。",
+        keyStrength: "0-fee benefit",
       },
       {
         rank: 4,
-        cardSlug: "jupiter-global",
+        cardSlug: "redotpay",
         reason:
-          "SolanaベースのDEX発行カード。USD取引0%・最大4%キャッシュバック予定。紹介で双方$100の強力プログラム。",
-        keyStrength: "USD取引0%",
+          "発行手数料、月額・年会費なし、ATM出金、Apple Pay対応などの条件が公式ヘルプセンターで確認でき、情報の見通しが良いカードです。",
+        keyStrength: "低コスト発行",
       },
       {
         rank: 5,
-        cardSlug: "tevau",
+        cardSlug: "jupiter-global",
         reason:
-          "180カ国以上・26万ユーザー超の実績あるグローバルカード。ウォレット・Earn・レンディングを統合したマネーアプリ。",
-        keyStrength: "180カ国対応",
+          "FAQでUSDC-only、年会費0、物理カードなし、発行体別のFX条件まで明示されたJupiter Globalのデジタルカードです。",
+        keyStrength: "USDC only",
       },
       {
         rank: 6,
-        cardSlug: "redotpay",
+        cardSlug: "tevau",
         reason:
-          "バーチャルカード$10から発行できるシンプルな設計。シンプルなクリプト決済を始めたい方向け。",
-        keyStrength: "低コスト発行",
+          "公開APIドキュメントでカード作成やKYC、手数料照会エンドポイントは確認できますが、利用者向け料金表は公開確認できませんでした。",
+        keyStrength: "料金非開示",
       },
     ],
     relatedArticleSlugs: ["how-to-choose-crypto-card", "what-is-crypto-card"],
@@ -68,24 +68,24 @@ export const topPicks: TopPick[] = [
     entries: [
       {
         rank: 1,
-        cardSlug: "tria",
+        cardSlug: "bitget-wallet-card",
         reason:
-          "日本語サイト（tria.so/ja）を提供。150カ国以上対応で日本からの申し込み可能性が最も高いカード。",
-        keyStrength: "日本語対応あり",
+          "APAC向けの公式ヘルプ記事で日本居住者が申込対象国に含まれています。",
+        keyStrength: "日本を明記",
       },
       {
         rank: 2,
-        cardSlug: "kast",
+        cardSlug: "jupiter-global",
         reason:
-          "グローバル展開でUSDC利用ならFX手数料0%。日本ユーザーにとっても使いやすいシンプルな設計。",
-        keyStrength: "FX手数料0%",
+          "Jupiter IDのFAQでAPACは proof of address を含むKYC要件が明示されており、地域別ルールが確認しやすいです。",
+        keyStrength: "APAC KYC明示",
       },
       {
         rank: 3,
-        cardSlug: "tevau",
+        cardSlug: "redotpay",
         reason:
-          "180カ国以上の広いカバレッジ。アジア圏での実績もあり日本ユーザーとの相性が良い。",
-        keyStrength: "アジア実績あり",
+          "日本対応の明記はありませんが、非対応国リスト方式で利用可否を確認できるため、申込判断がしやすい設計です。",
+        keyStrength: "対象外リスト方式",
       },
     ],
     relatedArticleSlugs: ["how-to-choose-crypto-card"],
@@ -105,22 +105,22 @@ export const topPicks: TopPick[] = [
         rank: 1,
         cardSlug: "tria",
         reason:
-          "非カストディ型で1,000以上のトークン・マルチチェーン対応。DeFiとリアル決済を最高水準で統合。",
-        keyStrength: "マルチチェーン",
+          "リンクしたウォレットのデジタル資産を担保に使う構造が規約で明示されており、DeFi寄りの利用モデルが確認できます。",
+        keyStrength: "担保型",
       },
       {
         rank: 2,
-        cardSlug: "jupiter-global",
+        cardSlug: "bitget-wallet-card",
         reason:
-          "Solana最大DEXアグリゲーター発の非カストディカード。SolanaエコシステムのDeFiユーザーに最適。",
-        keyStrength: "Solana特化",
+          "ウォレット連携と0-fee benefitが公式ヘルプで整理されており、Web3ウォレット文脈で使いやすい構成です。",
+        keyStrength: "ウォレット連携",
       },
       {
         rank: 3,
-        cardSlug: "bitget-wallet-card",
+        cardSlug: "jupiter-global",
         reason:
-          "Bitget Wallet連携の非カストディ型。EU・アジアのDeFiユーザーに対応。",
-        keyStrength: "非カストディ",
+          "USDC-onlyのデジタルVisaデビットカードとしてFAQが整備されており、Jupiterアプリ内での利用条件を追いやすいです。",
+        keyStrength: "USDC only",
       },
     ],
     relatedArticleSlugs: ["what-is-crypto-card"],
@@ -140,22 +140,22 @@ export const topPicks: TopPick[] = [
         rank: 1,
         cardSlug: "kast",
         reason:
-          "USDC決済ならFX手数料0%。ステーブルコイン特化の設計で最もコストを抑えられる。",
-        keyStrength: "USDC手数料0%",
+          "ステーブルコイン入金が1:1でUSD残高化され、USD建てカード決済0%が公式ヘルプに明記されています。",
+        keyStrength: "USD決済0%",
       },
       {
         rank: 2,
-        cardSlug: "tria",
+        cardSlug: "jupiter-global",
         reason:
-          "USDT・USDC含む1,000以上のトークンに対応。ステーブルコイン活用の自由度が最高水準。",
-        keyStrength: "マルチトークン",
+          "USDC-onlyのカードとして残高管理方法と発行体別FX条件がFAQに整理されています。",
+        keyStrength: "USDC only",
       },
       {
         rank: 3,
-        cardSlug: "jupiter-global",
+        cardSlug: "redotpay",
         reason:
-          "USDCを軸にSolanaチェーンで運用。USD建て取引は手数料0%。",
-        keyStrength: "USD取引0%",
+          "USD / HKDカードの考え方と暗号資産変換・FX手数料がヘルプセンターで確認できます。",
+        keyStrength: "手数料が明確",
       },
     ],
     relatedArticleSlugs: ["stablecoin-daily-payment"],
@@ -173,24 +173,24 @@ export const topPicks: TopPick[] = [
     entries: [
       {
         rank: 1,
-        cardSlug: "tevau",
+        cardSlug: "redotpay",
         reason:
-          "180カ国以上の広いカバレッジ。26万ユーザー超の実績を持つグローバルカード。",
-        keyStrength: "180カ国対応",
+          "利用可能場所、ATM出金、Apple Pay、非対応国の考え方が公式ヘルプセンターに揃っており、海外利用条件を追いやすいです。",
+        keyStrength: "利用条件が明確",
       },
       {
         rank: 2,
         cardSlug: "tria",
         reason:
-          "150カ国以上・1.3億店舗以上で利用可能。BestPath AIで最安コストの海外利用が可能。",
-        keyStrength: "150カ国対応",
+          "米国外向けの国際カード規約があり、FX・ATM関連手数料が明示されています。",
+        keyStrength: "国際規約あり",
       },
       {
         rank: 3,
         cardSlug: "kast",
         reason:
-          "グローバルなVisa加盟店対応。USD取引ならFX手数料0%で海外コストを最小化。",
-        keyStrength: "FX手数料0%",
+          "外貨手数料とATM出金条件が公開されているため、海外利用時のコストを把握しやすいカードです。",
+        keyStrength: "コスト把握しやすい",
       },
     ],
     relatedArticleSlugs: ["overseas-usage-guide"],

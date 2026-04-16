@@ -6,6 +6,7 @@ import { topPicks } from "@/data/top-picks";
 import ArticleCard from "@/components/articles/ArticleCard";
 import { topPickLabels, topPickIcons } from "@/lib/utils";
 import HeroCanvas from "@/components/hero/HeroCanvas";
+import CardArtwork from "@/components/cards/CardArtwork";
 import {
   LayoutGrid,
   GitCompare,
@@ -164,19 +165,13 @@ export default function HomePage() {
                       }`}>
                         {entry.rank}
                       </div>
-                      {card.image ? (
-                        <img
-                          src={card.image}
-                          alt={card.name}
-                          width={80}
-                          height={50}
-                          className="w-20 rounded-lg shadow-sm object-cover"
-                        />
-                      ) : (
-                        <div className={`w-20 h-12 bg-gradient-to-br ${card.coverColor} rounded-lg flex items-center justify-center text-xl shadow-sm`}>
-                          {card.logo}
-                        </div>
-                      )}
+                      <CardArtwork
+                        card={card}
+                        className="w-24"
+                        imageClassName="rounded-[14px]"
+                        fallbackClassName="rounded-lg text-xl"
+                        paddingClassName="p-3"
+                      />
                     </div>
 
                     {/* Center: name + benefit */}

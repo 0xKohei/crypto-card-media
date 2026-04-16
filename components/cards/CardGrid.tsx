@@ -2,6 +2,7 @@ import Link from "next/link";
 import type { Card } from "@/types";
 import { CheckCircle, XCircle, Globe, ExternalLink } from "lucide-react";
 import { cn } from "@/lib/utils";
+import CardArtwork from "@/components/cards/CardArtwork";
 
 interface CardGridProps {
   cards: Card[];
@@ -28,16 +29,16 @@ export function CardGridItem({ card }: { card: Card }) {
   return (
     <div className="group bg-white rounded-2xl border border-gray-200 hover:border-blue-200 hover:shadow-md transition-all duration-200 overflow-hidden">
       {/* Card header */}
-      {card.image ? (
-        <div className="relative overflow-hidden rounded-t-2xl">
-          <img
-            src={card.image}
-            alt={card.name}
-            className="w-full h-auto block"
-            style={{ aspectRatio: "420/265" }}
+      {card.cardImage ?? card.image ? (
+        <div className="relative p-3 pb-0">
+          <CardArtwork
+            card={card}
+            className="rounded-[20px]"
+            imageClassName="block"
+            fallbackClassName="text-2xl"
+            paddingClassName="p-4 sm:p-5"
           />
-          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
-          <div className="absolute top-2.5 right-2.5 flex flex-col gap-1 items-end">
+          <div className="absolute top-5 right-5 flex flex-col gap-1 items-end">
             {card.isSponsor && (
               <span className="bg-black/40 text-white text-xs px-2 py-0.5 rounded-full backdrop-blur-sm">PR</span>
             )}
@@ -73,9 +74,9 @@ export function CardGridItem({ card }: { card: Card }) {
       )}
 
       {/* Card body */}
-      <div className="p-4">
+      <div className="p-4 pt-3">
         {/* Card name (shown when using image, gradient header already has it) */}
-        {card.image && (
+        {(card.cardImage ?? card.image) && (
           <div className="flex items-center justify-between mb-3">
             <div>
               <h3 className="font-bold text-slate-900 leading-tight">{card.name}</h3>

@@ -6,7 +6,7 @@ import CardsClient from "./CardsClient";
 export const metadata: Metadata = {
   title: "クリプトカード一覧・比較表",
   description:
-    "Tria・GoMining・SwissBorgなど10枚以上のクリプトカードを一覧で比較。FX手数料・還元率・KYC・対応地域でフィルタリングして最適なカードを見つけましょう。",
+    "Tria・Kast・RedotPay・Tevau・Bitget Wallet Card・Jupiter Globalの6枚を一覧で比較。FX手数料・還元率・KYC・対応地域で絞り込めます。",
 };
 
 export default function CardsPage() {

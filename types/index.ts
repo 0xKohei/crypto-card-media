@@ -29,10 +29,45 @@ export type Network = "Visa" | "Mastercard" | "Both" | "Other";
 export type AvailabilityStatus = "available" | "waitlist" | "coming-soon" | "region-limited";
 
 export type RewardType = "cashback-fiat" | "cashback-crypto" | "points" | "apy" | "none";
+export type JapanAvailability = boolean | "unknown";
+export type CardImageSourceType =
+  | "official-site"
+  | "official-docs"
+  | "official-blog"
+  | "app-store"
+  | "third-party"
+  | "review-site";
 
 export interface CardFAQ {
   question: string;
   answer: string;
+}
+
+export interface CardFees {
+  issuance: string;
+  annual: string;
+  fx: string;
+  atm: string;
+}
+
+export interface CardCashback {
+  rate: string;
+  condition: string;
+}
+
+export interface CardAtm {
+  available: boolean;
+  limit: string;
+}
+
+export interface CardAvailability {
+  countries: string[];
+  japan: JapanAvailability;
+}
+
+export interface CardSource {
+  url: string;
+  section: string;
 }
 
 export interface Card {
@@ -41,6 +76,12 @@ export interface Card {
   slug: string;
   logo: string;            // emoji or path
   coverColor: string;      // Tailwind gradient classes
+  description: string;
+  fees: CardFees;
+  cashback: CardCashback;
+  atm: CardAtm;
+  availability: CardAvailability;
+  source: CardSource;
   shortDescription: string;
   longDescription: string;
   issuer: string;
@@ -102,6 +143,9 @@ export interface Card {
   isFeatured: boolean;
   isSponsor: boolean;
   image?: string;             // カード券面画像パス（/public/cards/*.svg|webp）
+  cardImage?: string;
+  cardImageSourceUrl?: string;
+  cardImageSourceType?: CardImageSourceType;
   isPriority: boolean;        // 優先掲載カード（リファラルあり）
   priorityRank?: number;      // 優先表示順（1〜6）
   keyStrength?: string;       // ランキング表示用の強みワード（例：「出金に強い」）

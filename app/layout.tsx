@@ -12,7 +12,7 @@ export const metadata: Metadata = {
     template: "%s｜CryptoCardナビ",
   },
   description:
-    "日本人向けのクリプトカード比較メディア。Tria・GoMining・SwissBorgなど主要カードの手数料・還元率・KYC要件・対応地域を徹底比較。USDT活用・出金性・海外利用など用途別ランキングも。",
+    "日本人向けのクリプトカード比較メディア。掲載中の6カードについて、手数料・還元率・KYC要件・対応地域を比較しています。",
   keywords: [
     "クリプトカード",
     "仮想通貨カード",

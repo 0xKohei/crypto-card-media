@@ -106,7 +106,7 @@ export default function BlogDetailPage({ params }: { params: { slug: string } })
             <div className="space-y-2 text-sm">
               <Link href="/finder" className="block text-blue-600 hover:underline">→ 条件でカードを探す</Link>
               <Link href="/top-picks/usdt" className="block text-blue-600 hover:underline">→ USDT活用ランキング</Link>
-              <Link href="/top-picks/withdrawal" className="block text-blue-600 hover:underline">→ 出金性ランキング</Link>
+              <Link href="/top-picks/overall" className="block text-blue-600 hover:underline">→ 総合ランキング</Link>
             </div>
           </div>
         </aside>

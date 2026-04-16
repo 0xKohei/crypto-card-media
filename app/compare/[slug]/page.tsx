@@ -6,6 +6,7 @@ import { comparisons, getComparisonBySlug } from "@/data/comparisons";
 import { articles } from "@/data/articles";
 import Breadcrumb from "@/components/layout/Breadcrumb";
 import Badge from "@/components/common/Badge";
+import CardArtwork from "@/components/cards/CardArtwork";
 import {
   regionLabels,
   kycLabels,
@@ -126,9 +127,13 @@ export default function CompareDetailPage({ params }: { params: { slug: string }
               {compCards.map((card) => (
                 <th key={card.id} className="py-4 px-4">
                   <div className="flex flex-col items-center gap-2">
-                    <div className={`w-12 h-12 bg-gradient-to-br ${card.coverColor} rounded-xl flex items-center justify-center text-xl`}>
-                      {card.logo}
-                    </div>
+                    <CardArtwork
+                      card={card}
+                      className="w-28"
+                      imageClassName="rounded-[14px]"
+                      fallbackClassName="rounded-xl text-xl"
+                      paddingClassName="p-3"
+                    />
                     <Link href={`/cards/${card.slug}`} className="font-bold text-gray-900 hover:text-blue-600 text-sm">
                       {card.name}
                     </Link>
@@ -217,9 +222,13 @@ export default function CompareDetailPage({ params }: { params: { slug: string }
         {compCards.map((card) => (
           <div key={card.id} className="bg-white border border-gray-200 rounded-2xl p-5">
             <div className="flex items-center gap-3 mb-4">
-              <div className={`w-10 h-10 bg-gradient-to-br ${card.coverColor} rounded-xl flex items-center justify-center text-xl`}>
-                {card.logo}
-              </div>
+              <CardArtwork
+                card={card}
+                className="w-24 flex-shrink-0"
+                imageClassName="rounded-[14px]"
+                fallbackClassName="rounded-xl text-xl"
+                paddingClassName="p-2.5"
+              />
               <h3 className="font-bold text-gray-900">{card.name}</h3>
             </div>
             <div className="mb-4">

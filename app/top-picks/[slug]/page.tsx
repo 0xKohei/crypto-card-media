@@ -6,6 +6,7 @@ import { cards } from "@/data/cards";
 import { articles } from "@/data/articles";
 import { comparisons } from "@/data/comparisons";
 import Breadcrumb from "@/components/layout/Breadcrumb";
+import CardArtwork from "@/components/cards/CardArtwork";
 import { topPickLabels, topPickIcons } from "@/lib/utils";
 import {
   Trophy,
@@ -131,15 +132,14 @@ export default function TopPickDetailPage({ params }: { params: { slug: string }
               <div className="p-5">
                 <div className="flex gap-4">
                   {/* Card image */}
-                  {card.image ? (
-                    <div className="flex-shrink-0 w-28 sm:w-36">
-                      <img
-                        src={card.image}
-                        alt={card.name}
-                        className="w-full rounded-xl shadow-sm object-cover"
-                        style={{ aspectRatio: "420/265" }}
-                      />
-                    </div>
+                  {card.cardImage ?? card.image ? (
+                    <CardArtwork
+                      card={card}
+                      className="flex-shrink-0 w-36 sm:w-44"
+                      imageClassName="rounded-[16px]"
+                      fallbackClassName="rounded-xl text-2xl"
+                      paddingClassName="p-4 sm:p-5"
+                    />
                   ) : (
                     <div className={`w-14 h-14 bg-gradient-to-br ${card.coverColor} rounded-xl flex items-center justify-center text-2xl flex-shrink-0`}>
                       {card.logo}

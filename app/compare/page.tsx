@@ -3,12 +3,13 @@ import Link from "next/link";
 import { comparisons } from "@/data/comparisons";
 import { cards } from "@/data/cards";
 import Breadcrumb from "@/components/layout/Breadcrumb";
+import CardArtwork from "@/components/cards/CardArtwork";
 import { GitCompare, ArrowRight } from "lucide-react";
 
 export const metadata: Metadata = {
   title: "クリプトカード比較ページ一覧",
   description:
-    "Tria・GoMining・SwissBorgなど主要クリプトカードを2〜4枚並べて徹底比較。手数料・還元率・KYC・対応地域などを項目別に比較できます。",
+    "Tria・Kast・RedotPay・Tevau・Bitget Wallet Card・Jupiter Globalの掲載カード同士を比較。手数料・還元率・KYC・対応地域を項目別に確認できます。",
 };
 
 export default function ComparePage() {
@@ -39,7 +40,13 @@ export default function ComparePage() {
               href={`/cards/${card.slug}`}
               className="bg-white border border-violet-200 rounded-xl p-3 text-center hover:border-violet-400 transition-colors"
             >
-              <div className="text-2xl mb-1">{card.logo}</div>
+              <CardArtwork
+                card={card}
+                className="mb-2"
+                imageClassName="rounded-[14px]"
+                fallbackClassName="rounded-lg text-2xl"
+                paddingClassName="p-3"
+              />
               <p className="text-xs font-medium text-gray-900">{card.name}</p>
             </Link>
           ))}
@@ -65,9 +72,13 @@ export default function ComparePage() {
                 {compCards.map((card, i) => (
                   <div key={card!.id} className="flex items-center gap-2">
                     {i > 0 && <span className="text-gray-400 text-sm font-bold">vs</span>}
-                    <div className={`w-10 h-10 bg-gradient-to-br ${card!.coverColor} rounded-xl flex items-center justify-center text-xl`}>
-                      {card!.logo}
-                    </div>
+                    <CardArtwork
+                      card={card!}
+                      className="w-24"
+                      imageClassName="rounded-[14px]"
+                      fallbackClassName="rounded-xl text-xl"
+                      paddingClassName="p-2.5"
+                    />
                   </div>
                 ))}
               </div>
@@ -102,7 +113,13 @@ export default function ComparePage() {
               href={`/cards/${card.slug}`}
               className="flex items-center gap-2 bg-white border border-gray-200 rounded-xl px-3 py-2 hover:border-blue-300 hover:text-blue-600 transition-all text-sm"
             >
-              <span>{card.logo}</span>
+              <CardArtwork
+                card={card}
+                className="w-16 flex-shrink-0"
+                imageClassName="rounded-[12px]"
+                fallbackClassName="rounded-lg text-sm"
+                paddingClassName="p-2"
+              />
               <span className="truncate font-medium text-gray-900">{card.name}</span>
             </Link>
           ))}
