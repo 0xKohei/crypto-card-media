@@ -42,10 +42,8 @@ export default function ComparePage() {
             >
               <CardArtwork
                 card={card}
-                className="mb-2"
-                imageClassName="rounded-[14px]"
+                className="mb-2 rounded-[14px]"
                 fallbackClassName="rounded-lg text-2xl"
-                paddingClassName="p-3"
               />
               <p className="text-xs font-medium text-gray-900">{card.name}</p>
             </Link>
@@ -74,10 +72,8 @@ export default function ComparePage() {
                     {i > 0 && <span className="text-gray-400 text-sm font-bold">vs</span>}
                     <CardArtwork
                       card={card!}
-                      className="w-24"
-                      imageClassName="rounded-[14px]"
+                      className="w-24 rounded-[14px]"
                       fallbackClassName="rounded-xl text-xl"
-                      paddingClassName="p-2.5"
                     />
                   </div>
                 ))}
@@ -115,10 +111,8 @@ export default function ComparePage() {
             >
               <CardArtwork
                 card={card}
-                className="w-16 flex-shrink-0"
-                imageClassName="rounded-[12px]"
+                className="w-16 flex-shrink-0 rounded-[12px]"
                 fallbackClassName="rounded-lg text-sm"
-                paddingClassName="p-2"
               />
               <span className="truncate font-medium text-gray-900">{card.name}</span>
             </Link>

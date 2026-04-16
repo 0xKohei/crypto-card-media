@@ -129,10 +129,8 @@ export default function CompareDetailPage({ params }: { params: { slug: string }
                   <div className="flex flex-col items-center gap-2">
                     <CardArtwork
                       card={card}
-                      className="w-28"
-                      imageClassName="rounded-[14px]"
+                      className="w-28 rounded-[14px]"
                       fallbackClassName="rounded-xl text-xl"
-                      paddingClassName="p-3"
                     />
                     <Link href={`/cards/${card.slug}`} className="font-bold text-gray-900 hover:text-blue-600 text-sm">
                       {card.name}
@@ -224,10 +222,8 @@ export default function CompareDetailPage({ params }: { params: { slug: string }
             <div className="flex items-center gap-3 mb-4">
               <CardArtwork
                 card={card}
-                className="w-24 flex-shrink-0"
-                imageClassName="rounded-[14px]"
+                className="w-24 flex-shrink-0 rounded-[14px]"
                 fallbackClassName="rounded-xl text-xl"
-                paddingClassName="p-2.5"
               />
               <h3 className="font-bold text-gray-900">{card.name}</h3>
             </div>

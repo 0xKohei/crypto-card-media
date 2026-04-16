@@ -49,11 +49,7 @@ export default function ShowcaseCard({
       <div className="relative bg-[#05070b]">
         <CardArtwork
           card={card}
-          bleed
-          className="rounded-none border-0 shadow-none"
-          imageClassName="block h-full w-full"
           fallbackClassName="text-2xl"
-          paddingClassName="p-0"
         />
         <div className="pointer-events-none absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/18 to-transparent" />
         <div className="absolute left-3 top-3 flex items-start gap-2">

@@ -159,11 +159,8 @@ export default function HomePage() {
                     <div className="sm:w-[240px] sm:flex-shrink-0">
                       <CardArtwork
                         card={card}
-                        bleed
                         className="rounded-[20px] border border-black/10 shadow-[0_10px_22px_rgba(15,23,42,0.12)]"
-                        imageClassName="block h-full w-full"
                         fallbackClassName="text-2xl"
-                        paddingClassName="p-0"
                       />
                     </div>
 

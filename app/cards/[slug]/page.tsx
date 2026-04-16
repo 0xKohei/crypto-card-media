@@ -91,10 +91,8 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
               {card.cardImage ?? card.image ? (
                 <CardArtwork
                   card={card}
-                  className="w-full sm:w-72 flex-shrink-0"
-                  imageClassName="rounded-[18px]"
+                  className="w-full sm:w-72 flex-shrink-0 rounded-[18px]"
                   fallbackClassName="rounded-xl text-3xl"
-                  paddingClassName="p-5 sm:p-6"
                 />
               ) : (
                 <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">
@@ -266,8 +264,7 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
           <div className="bg-white border-2 border-blue-100 rounded-2xl p-6 sticky top-24">
             <CardArtwork
               card={card}
-              className="mb-4 shadow-sm"
-              imageClassName="rounded-xl"
+              className="mb-4 rounded-xl shadow-sm"
               fallbackClassName="rounded-xl text-3xl"
             />
             <h3 className="font-bold text-gray-900 text-lg mb-1">{card.name}</h3>
