@@ -101,6 +101,7 @@ export interface Card {
   isEditorsPick: boolean;
   isFeatured: boolean;
   isSponsor: boolean;
+  image?: string;             // カード券面画像パス（/public/cards/*.svg|webp）
   isPriority: boolean;        // 優先掲載カード（リファラルあり）
   priorityRank?: number;      // 優先表示順（1〜6）
   keyStrength?: string;       // ランキング表示用の強みワード（例：「出金に強い」）

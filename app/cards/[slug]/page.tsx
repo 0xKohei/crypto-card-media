@@ -85,10 +85,22 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
         <div className="lg:col-span-2">
           {/* Card header */}
           <div className={`bg-gradient-to-br ${card.coverColor} rounded-2xl p-6 sm:p-8 text-white mb-6`}>
-            <div className="flex items-start gap-5">
-              <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">
-                {card.logo}
-              </div>
+            <div className="flex flex-col sm:flex-row items-start gap-5">
+              {/* Card image or logo */}
+              {card.image ? (
+                <div className="w-full sm:w-52 flex-shrink-0">
+                  <img
+                    src={card.image}
+                    alt={card.name}
+                    className="w-full rounded-xl shadow-lg object-cover"
+                    style={{ aspectRatio: "420/265" }}
+                  />
+                </div>
+              ) : (
+                <div className="w-16 h-16 bg-white/20 rounded-2xl flex items-center justify-center text-3xl flex-shrink-0">
+                  {card.logo}
+                </div>
+              )}
               <div className="flex-1">
                 <div className="flex flex-wrap items-center gap-2 mb-2">
                   {card.isSponsor && (
@@ -105,12 +117,12 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
                 </div>
                 <h1 className="text-2xl sm:text-3xl font-bold mb-1">{card.name}</h1>
                 <p className="text-white/70 text-sm">{card.provider}</p>
+
+                <p className="mt-3 text-white/90 text-sm leading-relaxed">
+                  {card.shortDescription}
+                </p>
               </div>
             </div>
-
-            <p className="mt-4 text-white/90 text-sm leading-relaxed">
-              {card.shortDescription}
-            </p>
 
             {/* Quick stats */}
             <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-5">
@@ -122,7 +134,7 @@ export default function CardDetailPage({ params }: { params: { slug: string } })
               ].map((stat) => (
                 <div key={stat.label} className="bg-white/10 rounded-xl p-3">
                   <p className="text-xs text-white/60 mb-0.5">{stat.label}</p>
-                  <p className="font-semibold text-sm text-white">{stat.value}</p>
+                  <p className="font-bold text-sm text-white">{stat.value}</p>
                 </div>
               ))}
             </div>

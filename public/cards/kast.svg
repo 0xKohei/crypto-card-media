@@ -1,0 +1,30 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 420 265" width="420" height="265">
+  <defs>
+    <linearGradient id="bg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:#0369a1"/>
+      <stop offset="100%" style="stop-color:#0891b2"/>
+    </linearGradient>
+    <linearGradient id="shine" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" style="stop-color:rgba(255,255,255,0.18)"/>
+      <stop offset="100%" style="stop-color:rgba(255,255,255,0)"/>
+    </linearGradient>
+    <radialGradient id="glow" cx="70%" cy="30%" r="55%">
+      <stop offset="0%" style="stop-color:rgba(125,211,252,0.3)"/>
+      <stop offset="100%" style="stop-color:rgba(6,182,212,0)"/>
+    </radialGradient>
+  </defs>
+  <rect width="420" height="265" rx="18" fill="url(#bg)"/>
+  <rect width="420" height="265" rx="18" fill="url(#glow)"/>
+  <rect width="420" height="265" rx="18" fill="url(#shine)"/>
+  <circle cx="80" cy="220" r="90" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1.5"/>
+  <circle cx="80" cy="220" r="60" fill="none" stroke="rgba(255,255,255,0.05)" stroke-width="1"/>
+  <!-- Chip -->
+  <rect x="36" y="90" width="54" height="42" rx="6" fill="rgba(255,220,100,0.9)"/>
+  <line x1="36" y1="104" x2="90" y2="104" stroke="rgba(200,160,60,0.7)" stroke-width="1"/>
+  <line x1="36" y1="118" x2="90" y2="118" stroke="rgba(200,160,60,0.7)" stroke-width="1"/>
+  <line x1="60" y1="90" x2="60" y2="132" stroke="rgba(200,160,60,0.7)" stroke-width="1"/>
+  <text x="36" y="62" font-family="system-ui,-apple-system,sans-serif" font-size="30" font-weight="800" fill="white" opacity="0.95">KAST</text>
+  <text x="36" y="185" font-family="monospace" font-size="17" fill="rgba(255,255,255,0.7)" letter-spacing="3">•••• •••• •••• ••••</text>
+  <text x="36" y="218" font-family="system-ui,-apple-system,sans-serif" font-size="11" fill="rgba(255,255,255,0.5)" letter-spacing="2">STABLECOIN CARD</text>
+  <text x="356" y="240" font-family="system-ui,-apple-system,sans-serif" font-size="22" font-weight="700" font-style="italic" fill="white" opacity="0.9">VISA</text>
+</svg>

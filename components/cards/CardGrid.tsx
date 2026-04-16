@@ -28,32 +28,61 @@ export function CardGridItem({ card }: { card: Card }) {
   return (
     <div className="group bg-white rounded-2xl border border-gray-200 hover:border-blue-200 hover:shadow-md transition-all duration-200 overflow-hidden">
       {/* Card header */}
-      <div className={cn("h-24 bg-gradient-to-br flex items-center justify-between px-5 relative", card.coverColor)}>
-        <div className="flex items-center gap-3">
-          <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl">
-            {card.logo}
-          </div>
-          <div>
-            <h3 className="font-bold text-white leading-tight">{card.name}</h3>
-            <p className="text-white/70 text-xs">{card.network}</p>
+      {card.image ? (
+        <div className="relative overflow-hidden rounded-t-2xl">
+          <img
+            src={card.image}
+            alt={card.name}
+            className="w-full h-auto block"
+            style={{ aspectRatio: "420/265" }}
+          />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
+          <div className="absolute top-2.5 right-2.5 flex flex-col gap-1 items-end">
+            {card.isSponsor && (
+              <span className="bg-black/40 text-white text-xs px-2 py-0.5 rounded-full backdrop-blur-sm">PR</span>
+            )}
+            {card.keyStrength && (
+              <span className="bg-black/40 text-white text-xs px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/20">
+                {card.keyStrength}
+              </span>
+            )}
           </div>
         </div>
-        <div className="flex flex-col gap-1 items-end">
-          {card.isSponsor && (
-            <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full backdrop-blur-sm">
-              PR
-            </span>
-          )}
-          {card.keyStrength && (
-            <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/20">
-              {card.keyStrength}
-            </span>
-          )}
+      ) : (
+        <div className={cn("h-24 bg-gradient-to-br flex items-center justify-between px-5 relative", card.coverColor)}>
+          <div className="flex items-center gap-3">
+            <div className="w-12 h-12 bg-white/20 rounded-xl flex items-center justify-center text-2xl">
+              {card.logo}
+            </div>
+            <div>
+              <h3 className="font-bold text-white leading-tight">{card.name}</h3>
+              <p className="text-white/70 text-xs">{card.network}</p>
+            </div>
+          </div>
+          <div className="flex flex-col gap-1 items-end">
+            {card.isSponsor && (
+              <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full backdrop-blur-sm">PR</span>
+            )}
+            {card.keyStrength && (
+              <span className="bg-white/20 text-white text-xs px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/20">
+                {card.keyStrength}
+              </span>
+            )}
+          </div>
         </div>
-      </div>
+      )}
 
       {/* Card body */}
       <div className="p-4">
+        {/* Card name (shown when using image, gradient header already has it) */}
+        {card.image && (
+          <div className="flex items-center justify-between mb-3">
+            <div>
+              <h3 className="font-bold text-slate-900 leading-tight">{card.name}</h3>
+              <p className="text-slate-400 text-xs">{card.network}</p>
+            </div>
+          </div>
+        )}
         <p className="text-xs text-gray-600 leading-relaxed mb-4 line-clamp-2">
           {card.shortDescription}
         </p>

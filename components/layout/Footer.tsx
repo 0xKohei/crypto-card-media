@@ -7,8 +7,9 @@ export default function Footer() {
         <div className="grid grid-cols-2 md:grid-cols-4 gap-8 mb-12">
           {/* Brand */}
           <div className="col-span-2 md:col-span-1">
-            <Link href="/" className="text-white font-bold text-lg">
-              Crypto<span className="text-blue-400">Card</span>ナビ
+            <Link href="/" className="flex flex-col leading-none">
+              <span className="text-white font-bold text-base tracking-tight">クリプトカードナビ</span>
+              <span className="text-slate-500 text-[10px] tracking-widest uppercase">Crypto Card Navi</span>
             </Link>
             <p className="mt-3 text-sm leading-relaxed">
               日本向けのクリプトカード比較・解説メディア。中立的な視点で情報を整理します。
@@ -71,7 +72,7 @@ export default function Footer() {
                 <Link href="/privacy" className="hover:text-slate-300">プライバシーポリシー</Link>
                 <Link href="/about" className="hover:text-slate-300">運営について</Link>
               </div>
-              <p>© 2026 CryptoCardナビ. All rights reserved.</p>
+              <p>© 2026 クリプトカードナビ. All rights reserved.</p>
             </div>
           </div>
         </div>
