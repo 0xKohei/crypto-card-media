@@ -84,11 +84,17 @@ async function apiFetch(url: string, method: string, password: string, body?: un
     },
     body: body ? JSON.stringify(body) : undefined,
   });
-  if (!res.ok) {
-    const err = await res.json().catch(() => ({ error: res.statusText }));
-    throw new Error((err as { error?: string }).error ?? `${res.status}`);
+  const json = await res.json().catch(() => ({ success: false, error: res.statusText })) as
+    | { success: false; error?: string }
+    | { success: true; data?: unknown }
+    | unknown;
+
+  const j = json as Record<string, unknown>;
+  if (!res.ok || j.success === false) {
+    throw new Error((j.error as string | undefined) ?? `HTTP ${res.status}`);
   }
-  return res.json();
+  // { success: true, data: [...] } → return data; raw response → return as-is
+  return j.data !== undefined ? j.data : json;
 }
 
 // ─────────────────────────────────────────────
@@ -918,10 +924,186 @@ function RankingEditor({
 }
 
 // ─────────────────────────────────────────────
+// Homepage Featured editor
+// ─────────────────────────────────────────────
+interface FeaturedSlotForm {
+  slot: number;
+  card_slug: string;
+  short_reason: string;
+  is_visible: boolean;
+}
+
+function HomepageFeaturedEditor({
+  password,
+  cardList,
+  showToast,
+}: {
+  password: string;
+  cardList: AdminCard[];
+  showToast: (msg: string, type: "success" | "error") => void;
+}) {
+  const makeDefaultSlots = useCallback(
+    (): FeaturedSlotForm[] => [
+      { slot: 1, card_slug: cardList[0]?.slug ?? "", short_reason: "", is_visible: true },
+      { slot: 2, card_slug: cardList[1]?.slug ?? "", short_reason: "", is_visible: true },
+      { slot: 3, card_slug: cardList[2]?.slug ?? "", short_reason: "", is_visible: true },
+    ],
+    [cardList],
+  );
+
+  const [slots, setSlots] = useState<FeaturedSlotForm[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  const load = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = (await apiFetch(
+        "/api/admin/homepage-featured",
+        "GET",
+        password,
+      )) as { slot: number; card_slug: string; short_reason: string | null; is_visible: boolean }[];
+
+      const defaults = makeDefaultSlots();
+      const merged = defaults.map((def) => {
+        const db = Array.isArray(data) ? data.find((s) => s.slot === def.slot) : undefined;
+        if (!db) return def;
+        return {
+          slot: db.slot,
+          card_slug: db.card_slug || def.card_slug,
+          short_reason: db.short_reason ?? "",
+          is_visible: db.is_visible ?? true,
+        };
+      });
+      setSlots(merged);
+    } catch (e) {
+      showToast(
+        `読み込み失敗: ${e instanceof Error ? e.message : String(e)}`,
+        "error",
+      );
+      setSlots(makeDefaultSlots());
+    } finally {
+      setLoading(false);
+    }
+  }, [password, showToast, makeDefaultSlots]);
+
+  useEffect(() => {
+    if (cardList.length > 0) load();
+  }, [load, cardList.length]);
+
+  const updateSlot = (
+    slotNum: number,
+    field: keyof FeaturedSlotForm,
+    value: string | boolean,
+  ) =>
+    setSlots((prev) =>
+      prev.map((s) => (s.slot === slotNum ? { ...s, [field]: value } : s)),
+    );
+
+  const handleSave = async () => {
+    setSaving(true);
+    try {
+      await apiFetch("/api/admin/homepage-featured", "POST", password, { slots });
+      showToast("トップ掲載を保存しました", "success");
+    } catch (e) {
+      showToast(
+        `保存失敗: ${e instanceof Error ? e.message : String(e)}`,
+        "error",
+      );
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading)
+    return (
+      <div className="flex items-center gap-2 text-slate-400 text-sm py-8">
+        <RefreshCw className="w-4 h-4 animate-spin" />
+        読み込み中...
+      </div>
+    );
+
+  return (
+    <div className="space-y-4">
+      {slots.map((slot) => (
+        <div key={slot.slot} className="border border-slate-700 rounded-xl overflow-hidden">
+          {/* Slot header */}
+          <div className="flex items-center gap-3 px-4 py-3 bg-slate-800 border-b border-slate-700">
+            <span className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center text-sm font-black text-white flex-shrink-0">
+              {slot.slot}
+            </span>
+            <span className="text-sm font-semibold text-white">スロット {slot.slot}</span>
+            <label className="ml-auto flex items-center gap-2 cursor-pointer">
+              <input
+                type="checkbox"
+                checked={slot.is_visible}
+                onChange={(e) => updateSlot(slot.slot, "is_visible", e.target.checked)}
+                className="w-4 h-4 rounded border-slate-500 accent-blue-500"
+              />
+              <span className="text-xs text-slate-400">表示する</span>
+            </label>
+          </div>
+
+          {/* Slot body */}
+          <div className="p-4 bg-slate-900 space-y-3">
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">掲載カード</label>
+              <select
+                value={slot.card_slug}
+                onChange={(e) => updateSlot(slot.slot, "card_slug", e.target.value)}
+                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:ring-1 focus:ring-blue-500"
+              >
+                {cardList.map((c) => (
+                  <option key={c.id} value={c.slug}>
+                    {c.name}
+                  </option>
+                ))}
+              </select>
+            </div>
+            <div>
+              <label className="block text-xs text-slate-400 mb-1">
+                一言コメント (short_reason) — トップページのランキングカードに表示
+              </label>
+              <input
+                type="text"
+                value={slot.short_reason}
+                onChange={(e) => updateSlot(slot.slot, "short_reason", e.target.value)}
+                placeholder="例: 還元率トップクラスの実力派カード"
+                className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+              />
+            </div>
+          </div>
+        </div>
+      ))}
+
+      <div className="flex justify-end pt-2">
+        <button
+          onClick={handleSave}
+          disabled={saving || slots.length === 0}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-semibold px-6 py-2.5 rounded-xl transition-colors text-sm"
+        >
+          <Save className="w-4 h-4" />
+          {saving ? "保存中..." : "トップ掲載を保存"}
+        </button>
+      </div>
+
+      <div className="bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-xs text-slate-400 space-y-1.5">
+        <p className="font-semibold text-slate-300">トップ掲載について</p>
+        <ul className="space-y-1 list-disc list-inside">
+          <li>スロット 1〜3 がトップページの「人気ランキング」に表示されます</li>
+          <li>「表示する」をオフにするとそのスロットは非表示になります</li>
+          <li>保存後は右上の「キャッシュ更新」で即時反映できます</li>
+        </ul>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 // Admin Dashboard
 // ─────────────────────────────────────────────
 function AdminDashboard({ password, onLogout }: { password: string; onLogout: () => void }) {
-  const [tab, setTab] = useState<"cards" | "rankings">("cards");
+  const [tab, setTab] = useState<"cards" | "rankings" | "featured">("cards");
   const [cards, setCards] = useState<AdminCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -1003,7 +1185,8 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
         <div className="flex gap-1 bg-slate-800 rounded-xl p-1 mb-8 w-fit">
           {[
             { id: "cards" as const, label: `カード管理 (${cards.length}件)` },
-            { id: "rankings" as const, label: "ランキング編集" },
+            { id: "rankings" as const, label: "ランキング管理" },
+            { id: "featured" as const, label: "トップ掲載管理" },
           ].map((t) => (
             <button
               key={t.id}
@@ -1097,13 +1280,31 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
         {tab === "rankings" && (
           <div>
             <div className="mb-6">
-              <h2 className="text-lg font-bold mb-1">ランキング編集（総合）</h2>
+              <h2 className="text-lg font-bold mb-1">ランキング管理（総合）</h2>
               <p className="text-xs text-slate-400">
                 カードの順位変更、対象カードの変更、各理由文の編集ができます。
                 保存後に「キャッシュ更新」で即時反映されます。
               </p>
             </div>
             <RankingEditor password={password} cardList={cards} showToast={showToast} />
+          </div>
+        )}
+
+        {/* ── Homepage Featured tab ── */}
+        {tab === "featured" && (
+          <div>
+            <div className="mb-6">
+              <h2 className="text-lg font-bold mb-1">トップ掲載管理</h2>
+              <p className="text-xs text-slate-400">
+                トップページ「人気ランキング」セクションに表示するカードを管理します。
+                スロット 1〜3 にカードを割り当て、一言コメントを設定してください。
+              </p>
+            </div>
+            <HomepageFeaturedEditor
+              password={password}
+              cardList={cards}
+              showToast={showToast}
+            />
           </div>
         )}
       </div>

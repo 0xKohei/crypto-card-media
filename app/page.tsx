@@ -2,7 +2,7 @@ import type { Metadata } from "next";
 import Link from "next/link";
 import { articles } from "@/data/articles";
 import { topPicks } from "@/data/top-picks";
-import { getCards, getPriorityCards, getRankingEntries } from "@/lib/get-cards";
+import { getCards, getPriorityCards, getHomepageFeatured } from "@/lib/get-cards";
 import ArticleCard from "@/components/articles/ArticleCard";
 import { topPickLabels, topPickIcons } from "@/lib/utils";
 import HeroCanvas from "@/components/hero/HeroCanvas";
@@ -29,10 +29,10 @@ export const metadata: Metadata = {
 };
 
 export default async function HomePage() {
-  const [allCards, priorityCards, rankingEntries] = await Promise.all([
+  const [allCards, priorityCards, featuredSlots] = await Promise.all([
     getCards(),
     getPriorityCards(),
-    getRankingEntries("overall").then((entries) => entries.slice(0, 3)),
+    getHomepageFeatured(),
   ]);
   const featuredArticles = articles.filter((a) => a.featured).slice(0, 3);
 
@@ -129,19 +129,15 @@ export default async function HomePage() {
           </p>
 
           <div className="space-y-3">
-            {rankingEntries.map((entry) => {
-              const card = allCards.find((c) => c.slug === entry.cardSlug);
-              if (!card) return null;
-              return (
-                <RankingCard
-                  key={entry.rank}
-                  card={card}
-                  rank={entry.rank}
-                  reason={entry.reason}
-                  shortReason={entry.shortReason}
-                />
-              );
-            })}
+            {featuredSlots.map((slot) => (
+              <RankingCard
+                key={slot.slot}
+                card={slot.card}
+                rank={slot.slot}
+                reason={slot.shortReason}
+                shortReason={slot.shortReason}
+              />
+            ))}
           </div>
 
           <div className="mt-8 text-center">

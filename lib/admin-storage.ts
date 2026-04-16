@@ -1,86 +1,151 @@
 /**
- * Edge-safe admin storage module.
- * No top-level Node.js imports (fs, path) — Supabase reads/writes via fetch.
- * Used by /api/admin/* routes (Edge Runtime on Cloudflare Pages).
+ * Admin storage — Supabase のみ、fs フォールバックなし
  *
- * Write requires Supabase. Read falls back to empty overrides when Supabase
- * is unconfigured (admin still loads all static cards via merged GET).
+ * 3テーブル構成:
+ *   cards            — カードオーバーライド (slug キー)
+ *   rankings         — ランキング (category + rank キー)
+ *   homepage_featured — トップページ掲載枠 (slot 1〜3)
+ *
+ * Supabase 未設定 (env vars なし) の場合:
+ *   - 読み取りは空配列を返す (ビルド・表示を壊さない)
+ *   - 書き込みは Error をスローする
  */
-import { getSupabaseClient, OVERRIDES_ROW_ID } from "@/lib/supabase";
-import type { AdminOverrides } from "@/lib/get-cards";
+import { getSupabaseClient } from "@/lib/supabase";
 
-export type { AdminOverrides };
-export type { AdminCardOverride, AdminRankingEntry } from "@/lib/get-cards";
+// ─── 型定義 ──────────────────────────────────────────────────────
 
-export async function readOverrides(): Promise<AdminOverrides> {
-  const supabase = getSupabaseClient();
-  if (!supabase) {
-    // No Supabase — try local JSON file (only works in Node.js runtime, not Edge)
-    try {
-      // webpackIgnore prevents Edge bundler from trying to resolve fs/path at build time.
-      // require() will still throw at runtime in Edge — caught below.
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const fs = require(/* webpackIgnore: true */ "fs") as typeof import("fs");
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
-      const path = require(/* webpackIgnore: true */ "path") as typeof import("path");
-      const filePath = path.join(process.cwd(), "data", "admin-overrides.json");
-      const raw = fs.readFileSync(filePath, "utf-8");
-      return JSON.parse(raw) as AdminOverrides;
-    } catch {
-      // Edge Runtime or file missing — return empty (admin will still show static cards)
-      return { cards: [], rankings: {} };
-    }
-  }
-
-  const { data, error } = await supabase
-    .from("admin_overrides")
-    .select("data")
-    .eq("id", OVERRIDES_ROW_ID)
-    .single();
-
-  if (error || !data) return { cards: [], rankings: {} };
-  return data.data as AdminOverrides;
+export interface DbCardOverride {
+  id?: string;
+  slug: string;
+  name?: string | null;
+  description?: string | null;  // shortDescription に対応
+  image?: string | null;         // cardImage に対応
+  fees?: Record<string, unknown> | null;  // 手数料・機能・その他の上書き値
+  tags?: string[] | null;
+  visible?: boolean | null;
+  updated_at?: string;
 }
 
-export async function writeOverrides(overrides: AdminOverrides): Promise<void> {
+export interface DbRankingEntry {
+  id?: string;
+  category: string;
+  rank: number;
+  card_slug: string;
+  short_reason?: string | null;
+  reason?: string | null;
+  is_visible?: boolean | null;
+}
+
+export interface DbHomepageFeatured {
+  id?: string;
+  slot: number;
+  card_slug: string;
+  short_reason?: string | null;
+  is_visible?: boolean | null;
+}
+
+// ─── ヘルパー ─────────────────────────────────────────────────────
+
+function requireSupabase() {
+  const client = getSupabaseClient();
+  if (!client) {
+    throw new Error(
+      "Supabase が設定されていません。" +
+      "SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY を環境変数に設定し、" +
+      "supabase-schema.sql を Supabase SQL エディタで実行してください。",
+    );
+  }
+  return client;
+}
+
+// ─── cards テーブル ───────────────────────────────────────────────
+
+/** カードオーバーライド一覧を取得。Supabase 未設定時は空配列を返す。 */
+export async function getCardOverrides(): Promise<DbCardOverride[]> {
   const supabase = getSupabaseClient();
-
-  // ── Supabase write ───────────────────────────────────────────────────────
-  if (supabase) {
-    const { error } = await supabase.from("admin_overrides").upsert({
-      id: OVERRIDES_ROW_ID,
-      data: overrides,
-    });
-    if (error) {
-      throw new Error(
-        `Supabase 書き込みエラー: ${error.message} ` +
-        "(テーブルが存在するか supabase-schema.sql を実行したか確認してください)",
-      );
-    }
-    return;
+  if (!supabase) return [];
+  const { data, error } = await supabase.from("cards").select("*");
+  if (error) {
+    console.error("[admin-storage] getCardOverrides:", error.message);
+    return [];
   }
+  return (data ?? []) as DbCardOverride[];
+}
 
-  // ── Node.js fallback (local dev without Supabase) ────────────────────────
-  let savedToFile = false;
-  try {
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const fs = require(/* webpackIgnore: true */ "fs") as typeof import("fs");
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const path = require(/* webpackIgnore: true */ "path") as typeof import("path");
-    const filePath = path.join(process.cwd(), "data", "admin-overrides.json");
-    fs.writeFileSync(filePath, JSON.stringify(overrides, null, 2), "utf-8");
-    savedToFile = true;
-  } catch {
-    // fs not available — likely Edge Runtime
+/** カードオーバーライドを upsert (slug が一致すれば更新、なければ挿入)。 */
+export async function upsertCardOverride(row: DbCardOverride): Promise<void> {
+  const supabase = requireSupabase();
+  const { id: _id, updated_at: _ts, ...rest } = row;
+  const { error } = await supabase
+    .from("cards")
+    .upsert({ ...rest, updated_at: new Date().toISOString() }, { onConflict: "slug" });
+  if (error) throw new Error(`cards upsert 失敗: ${error.message}`);
+}
+
+/** カードオーバーライドを削除 (静的データのデフォルトに戻る)。 */
+export async function deleteCardOverride(slug: string): Promise<void> {
+  const supabase = requireSupabase();
+  const { error } = await supabase.from("cards").delete().eq("slug", slug);
+  if (error) throw new Error(`cards delete 失敗: ${error.message}`);
+}
+
+// ─── rankings テーブル ────────────────────────────────────────────
+
+/** ランキングエントリーを取得 (rank 順)。Supabase 未設定時は空配列。 */
+export async function getRankings(category = "overall"): Promise<DbRankingEntry[]> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("rankings")
+    .select("*")
+    .eq("category", category)
+    .order("rank");
+  if (error) {
+    console.error("[admin-storage] getRankings:", error.message);
+    return [];
   }
+  return (data ?? []) as DbRankingEntry[];
+}
 
-  if (savedToFile) return;
+/** ランキングを一括更新 (既存エントリーを削除して再挿入)。 */
+export async function setRankings(category: string, entries: Omit<DbRankingEntry, "id">[]): Promise<void> {
+  const supabase = requireSupabase();
+  const { error: delErr } = await supabase
+    .from("rankings")
+    .delete()
+    .eq("category", category);
+  if (delErr) throw new Error(`rankings delete 失敗: ${delErr.message}`);
+  if (entries.length === 0) return;
+  const rows = entries.map((e) => ({ ...e, category }));
+  const { error: insErr } = await supabase.from("rankings").insert(rows);
+  if (insErr) throw new Error(`rankings insert 失敗: ${insErr.message}`);
+}
 
-  // ── Neither storage worked ───────────────────────────────────────────────
-  throw new Error(
-    "保存できません: Supabase が設定されていません。" +
-    ".env.local (ローカル開発) または Cloudflare Pages の環境変数に " +
-    "SUPABASE_URL と SUPABASE_SERVICE_ROLE_KEY を設定してください。" +
-    "設定後 supabase-schema.sql を Supabase SQL エディタで実行してください。",
-  );
+// ─── homepage_featured テーブル ───────────────────────────────────
+
+/** トップページ掲載枠を取得 (slot 順)。Supabase 未設定時は空配列。 */
+export async function getHomepageFeaturedSlots(): Promise<DbHomepageFeatured[]> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return [];
+  const { data, error } = await supabase
+    .from("homepage_featured")
+    .select("*")
+    .order("slot");
+  if (error) {
+    console.error("[admin-storage] getHomepageFeaturedSlots:", error.message);
+    return [];
+  }
+  return (data ?? []) as DbHomepageFeatured[];
+}
+
+/** トップページ掲載枠を一括 upsert (slot をキーに更新)。 */
+export async function setHomepageFeatured(slots: Omit<DbHomepageFeatured, "id">[]): Promise<void> {
+  const supabase = requireSupabase();
+  for (const slot of slots) {
+    const { id: _id, ...rest } = slot as DbHomepageFeatured;
+    const { error } = await supabase
+      .from("homepage_featured")
+      .upsert(rest, { onConflict: "slot" });
+    if (error) throw new Error(`homepage_featured upsert (slot ${slot.slot}) 失敗: ${error.message}`);
+  }
 }
