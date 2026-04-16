@@ -5,6 +5,7 @@ import CardsClient from "./CardsClient";
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export const metadata: Metadata = {
   title: "クリプトカード一覧・比較表",

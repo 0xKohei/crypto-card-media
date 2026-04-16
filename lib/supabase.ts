@@ -63,7 +63,15 @@ export function diagnoseSupabaseEnv(): SupabaseEnvDiag {
 export function getSupabaseClient() {
   const { url, serviceRoleKey } = resolveEnv();
   if (!url.trim() || !serviceRoleKey.trim()) return null;
-  return createClient(url.trim(), serviceRoleKey.trim());
+  return createClient(url.trim(), serviceRoleKey.trim(), {
+    global: {
+      // Next.js が fetch をラップしてキャッシュするため、
+      // Supabase の全リクエストを明示的に no-store にする。
+      // これにより admin 保存後の変更が即時反映される。
+      fetch: (input: RequestInfo | URL, init?: RequestInit) =>
+        fetch(input, { ...init, cache: "no-store" }),
+    },
+  });
 }
 
 /**

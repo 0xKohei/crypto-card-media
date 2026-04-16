@@ -22,6 +22,7 @@ import {
 
 export const runtime = "edge";
 export const dynamic = "force-dynamic";
+export const fetchCache = "force-no-store";
 
 export const metadata: Metadata = {
   title: "クリプトカード比較メディア | グローバル金融メディア CryptoCardNavi",
