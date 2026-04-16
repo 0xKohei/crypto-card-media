@@ -27,23 +27,24 @@ export default function CardGrid({ cards, columns = 3 }: CardGridProps) {
 
 export function CardGridItem({ card }: { card: Card }) {
   return (
-    <div className="group bg-white rounded-2xl border border-gray-200 hover:border-blue-200 hover:shadow-md transition-all duration-200 overflow-hidden">
+    <div className="group overflow-hidden rounded-2xl border border-gray-200 bg-white transition-all duration-200 hover:border-blue-200 hover:shadow-md">
       {/* Card header */}
       {card.cardImage ?? card.image ? (
-        <div className="relative p-3 pb-0">
+        <div className="relative border-b border-gray-100 bg-[#05070b]">
           <CardArtwork
             card={card}
-            className="rounded-[20px]"
-            imageClassName="block"
+            bleed
+            className="rounded-none border-0 shadow-none"
+            imageClassName="block h-full w-full"
             fallbackClassName="text-2xl"
-            paddingClassName="p-4 sm:p-5"
+            paddingClassName="p-0"
           />
-          <div className="absolute top-5 right-5 flex flex-col gap-1 items-end">
+          <div className="absolute right-3 top-3 flex flex-col items-end gap-1">
             {card.isSponsor && (
-              <span className="bg-black/40 text-white text-xs px-2 py-0.5 rounded-full backdrop-blur-sm">PR</span>
+              <span className="rounded-full bg-black/55 px-2 py-0.5 text-xs text-white backdrop-blur-sm">PR</span>
             )}
             {card.keyStrength && (
-              <span className="bg-black/40 text-white text-xs px-2 py-0.5 rounded-full backdrop-blur-sm border border-white/20">
+              <span className="rounded-full border border-white/15 bg-black/55 px-2 py-0.5 text-xs text-white backdrop-blur-sm">
                 {card.keyStrength}
               </span>
             )}
@@ -74,17 +75,17 @@ export function CardGridItem({ card }: { card: Card }) {
       )}
 
       {/* Card body */}
-      <div className="p-4 pt-3">
+      <div className="p-4">
         {/* Card name (shown when using image, gradient header already has it) */}
         {(card.cardImage ?? card.image) && (
-          <div className="flex items-center justify-between mb-3">
+          <div className="mb-3 flex items-center justify-between">
             <div>
-              <h3 className="font-bold text-slate-900 leading-tight">{card.name}</h3>
-              <p className="text-slate-400 text-xs">{card.network}</p>
+              <h3 className="leading-tight font-bold text-slate-900">{card.name}</h3>
+              <p className="text-xs text-slate-400">{card.network}</p>
             </div>
           </div>
         )}
-        <p className="text-xs text-gray-600 leading-relaxed mb-4 line-clamp-2">
+        <p className="mb-4 line-clamp-2 text-xs leading-relaxed text-gray-600">
           {card.shortDescription}
         </p>
 
