@@ -207,6 +207,7 @@ export interface TopPickEntry {
   rank: number;
   cardSlug: string;
   reason: string;
+  shortReason?: string;
   keyStrength?: string;       // 1〜3位の強みワード
 }
 

@@ -7,7 +7,7 @@ import ArticleCard from "@/components/articles/ArticleCard";
 import { topPickLabels, topPickIcons } from "@/lib/utils";
 import HeroCanvas from "@/components/hero/HeroCanvas";
 import CardGrid from "@/components/cards/CardGrid";
-import ShowcaseCard from "@/components/cards/ShowcaseCard";
+import CardArtwork from "@/components/cards/CardArtwork";
 import {
   LayoutGrid,
   GitCompare,
@@ -136,18 +136,69 @@ export default function HomePage() {
           </p>
 
           {/* Ranking list */}
-          <div className="grid grid-cols-1 gap-5 sm:grid-cols-2 xl:grid-cols-3">
+          <div className="space-y-4">
             {overallRanking?.entries.map((entry) => {
               const card = cards.find((c) => c.slug === entry.cardSlug);
               if (!card) return null;
 
               return (
-                <ShowcaseCard
+                <article
                   key={entry.rank}
-                  card={card}
-                  rank={entry.rank}
-                  reason={entry.reason}
-                />
+                  className="overflow-hidden rounded-[24px] border border-slate-200 bg-white shadow-[0_10px_28px_rgba(15,23,42,0.06)] transition-all hover:border-blue-200 hover:shadow-[0_16px_36px_rgba(15,23,42,0.10)]"
+                >
+                  <div className="flex flex-col gap-4 p-4 sm:flex-row sm:items-center sm:gap-5 sm:p-5">
+                    <div className="flex items-start gap-4 sm:w-[110px] sm:flex-col sm:items-center sm:gap-3">
+                      <div className="inline-flex h-12 min-w-12 items-center justify-center rounded-2xl bg-slate-950 text-lg font-black text-white shadow-sm">
+                        {entry.rank}
+                      </div>
+                      <span className="pt-2 text-xs font-semibold uppercase tracking-[0.24em] text-slate-300 sm:pt-0">
+                        Rank
+                      </span>
+                    </div>
+
+                    <div className="sm:w-[240px] sm:flex-shrink-0">
+                      <CardArtwork
+                        card={card}
+                        bleed
+                        className="rounded-[20px] border border-black/10 shadow-[0_10px_22px_rgba(15,23,42,0.12)]"
+                        imageClassName="block h-full w-full"
+                        fallbackClassName="text-2xl"
+                        paddingClassName="p-0"
+                      />
+                    </div>
+
+                    <div className="min-w-0 flex-1">
+                      <div className="mb-2 flex items-center gap-2">
+                        <h3 className="text-xl font-bold leading-tight text-slate-900">{card.name}</h3>
+                        {card.isSponsor && (
+                          <span className="rounded-full bg-slate-100 px-2 py-1 text-[11px] font-medium text-slate-500">
+                            PR
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="mb-2 text-sm font-medium text-slate-700">
+                        {entry.shortReason ?? entry.reason}
+                      </p>
+
+                      {entry.keyStrength && (
+                        <p className="mb-4 text-xs uppercase tracking-[0.18em] text-blue-600">
+                          {entry.keyStrength}
+                        </p>
+                      )}
+
+                      <div className="flex flex-wrap items-center gap-3">
+                        <Link
+                          href={`/cards/${card.slug}`}
+                          className="inline-flex items-center gap-1.5 rounded-xl bg-blue-600 px-4 py-2 text-sm font-bold text-white transition-colors hover:bg-blue-700"
+                        >
+                          詳細を見る
+                          <ChevronRight className="h-3.5 w-3.5" />
+                        </Link>
+                      </div>
+                    </div>
+                  </div>
+                </article>
               );
             })}
           </div>
