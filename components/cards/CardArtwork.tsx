@@ -29,13 +29,13 @@ export default function CardArtwork({
   return (
     <div
       className={cn("relative overflow-hidden bg-[#05070b]", className)}
-      style={{ aspectRatio: "1200 / 756" }}
+      style={{ aspectRatio: "16/10" }}
     >
       {src ? (
         <img
           src={src}
           alt={alt ?? card.name}
-          className={cn("block h-full w-full object-cover", imageClassName)}
+          className={cn("block h-full w-full object-cover object-center", imageClassName)}
           onError={() => setSrc(undefined)}
         />
       ) : (

@@ -1,14 +1,11 @@
-import Link from "next/link";
 import type { Card } from "@/types";
 import CardArtwork from "@/components/cards/CardArtwork";
-import { ChevronRight } from "lucide-react";
 
 interface RankingCardProps {
   card: Card;
   rank: number;
   reason: string;
   shortReason?: string;
-  keyStrength?: string;
 }
 
 const rankStyles: Record<number, { badge: string; bar: string }> = {
@@ -22,7 +19,6 @@ export default function RankingCard({
   rank,
   reason,
   shortReason,
-  keyStrength,
 }: RankingCardProps) {
   const style = rankStyles[rank] ?? { badge: "bg-slate-700 text-white shadow-slate-200", bar: "bg-slate-700" };
 
@@ -54,27 +50,10 @@ export default function RankingCard({
           </h3>
         </div>
 
-        {/* Key strength */}
-        {keyStrength && (
-          <p className="text-[11px] font-semibold uppercase tracking-[0.18em] text-blue-600">
-            {keyStrength}
-          </p>
-        )}
-
-        {/* Reason (most important) */}
+        {/* Short reason */}
         <p className="line-clamp-2 text-sm leading-relaxed text-slate-600">
           {shortReason ?? reason}
         </p>
-
-        {/* CTA */}
-        <div className="mt-1">
-          <Link
-            href={`/cards/${card.slug}`}
-            className="inline-flex items-center gap-1 text-xs font-semibold text-blue-600 hover:text-blue-800"
-          >
-            詳細を見る <ChevronRight className="h-3.5 w-3.5" />
-          </Link>
-        </div>
       </div>
     </article>
   );

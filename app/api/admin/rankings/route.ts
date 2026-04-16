@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
   const category = req.nextUrl.searchParams.get("category") ?? "overall";
-  const data = readAdminOverrides();
+  const data = await readAdminOverrides();
   return NextResponse.json(data.rankings[category] ?? []);
 }
 
@@ -30,9 +30,9 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "category and entries required" }, { status: 400 });
   }
 
-  const data = readAdminOverrides();
+  const data = await readAdminOverrides();
   data.rankings[category] = entries;
-  writeAdminOverrides(data);
+  await writeAdminOverrides(data);
 
   revalidatePath("/");
   revalidatePath("/top-picks/overall");

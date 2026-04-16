@@ -28,10 +28,12 @@ export const metadata: Metadata = {
     "世界の主要クリプトカードを日本語で徹底比較。Tria・Kast・RedotPay・Tevau・Bitget Wallet Card・Jupiter Globalの手数料・還元率・対応地域を一覧で確認。",
 };
 
-export default function HomePage() {
-  const allCards = getCards();
-  const priorityCards = getPriorityCards();
-  const rankingEntries = getRankingEntries("overall").slice(0, 3);
+export default async function HomePage() {
+  const [allCards, priorityCards, rankingEntries] = await Promise.all([
+    getCards(),
+    getPriorityCards(),
+    getRankingEntries("overall").then((entries) => entries.slice(0, 3)),
+  ]);
   const featuredArticles = articles.filter((a) => a.featured).slice(0, 3);
 
   return (
@@ -137,7 +139,6 @@ export default function HomePage() {
                   rank={entry.rank}
                   reason={entry.reason}
                   shortReason={entry.shortReason}
-                  keyStrength={entry.keyStrength}
                 />
               );
             })}

@@ -11,8 +11,8 @@ export const metadata: Metadata = {
     "Tria・Kast・RedotPay・Tevau・Bitget Wallet Card・Jupiter Globalの6枚を一覧で比較。FX手数料・還元率・KYC・対応地域で絞り込めます。",
 };
 
-export default function CardsPage() {
-  const cards = getCards();
+export default async function CardsPage() {
+  const cards = await getCards();
 
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">

@@ -1,6 +1,7 @@
 import fs from "fs";
 import path from "path";
 import { cards as staticCards } from "@/data/cards";
+import { getSupabaseClient, OVERRIDES_ROW_ID } from "@/lib/supabase";
 import type { Card } from "@/types";
 
 export interface AdminCardOverride {
@@ -31,7 +32,11 @@ export interface AdminOverrides {
 
 const OVERRIDES_PATH = path.join(process.cwd(), "data", "admin-overrides.json");
 
-export function readAdminOverrides(): AdminOverrides {
+// ---------------------------------------------------------------------------
+// Local JSON helpers (dev / VPS fallback)
+// ---------------------------------------------------------------------------
+
+function readLocalOverrides(): AdminOverrides {
   try {
     const raw = fs.readFileSync(OVERRIDES_PATH, "utf-8");
     return JSON.parse(raw);
@@ -40,33 +45,85 @@ export function readAdminOverrides(): AdminOverrides {
   }
 }
 
-export function writeAdminOverrides(data: AdminOverrides): void {
+function writeLocalOverrides(data: AdminOverrides): void {
   fs.writeFileSync(OVERRIDES_PATH, JSON.stringify(data, null, 2), "utf-8");
 }
 
-export function getCards(): (Card & { isVisible?: boolean })[] {
-  const overrides = readAdminOverrides();
+// ---------------------------------------------------------------------------
+// Supabase helpers
+// ---------------------------------------------------------------------------
+
+async function readSupabaseOverrides(): Promise<AdminOverrides | null> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return null;
+  const { data, error } = await supabase
+    .from("admin_overrides")
+    .select("data")
+    .eq("id", OVERRIDES_ROW_ID)
+    .single();
+  if (error || !data) return null;
+  return data.data as AdminOverrides;
+}
+
+async function writeSupabaseOverrides(overrides: AdminOverrides): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (!supabase) throw new Error("Supabase not configured");
+  const { error } = await supabase.from("admin_overrides").upsert({
+    id: OVERRIDES_ROW_ID,
+    data: overrides,
+  });
+  if (error) throw new Error(`Supabase write failed: ${error.message}`);
+}
+
+// ---------------------------------------------------------------------------
+// Public API — async reads/writes, Supabase preferred, JSON fallback
+// ---------------------------------------------------------------------------
+
+export async function readAdminOverrides(): Promise<AdminOverrides> {
+  const supabaseData = await readSupabaseOverrides();
+  if (supabaseData) return supabaseData;
+  return readLocalOverrides();
+}
+
+export async function writeAdminOverrides(data: AdminOverrides): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (supabase) {
+    await writeSupabaseOverrides(data);
+  } else {
+    writeLocalOverrides(data);
+  }
+}
+
+// ---------------------------------------------------------------------------
+// Card data getters
+// ---------------------------------------------------------------------------
+
+export async function getCards(): Promise<(Card & { isVisible?: boolean })[]> {
+  const overrides = await readAdminOverrides();
   return staticCards
     .map((card) => {
       const override = overrides.cards.find((c) => c.id === card.id);
       if (!override) return { ...card, isVisible: true } as Card & { isVisible?: boolean };
-      // Cast through unknown to avoid strict type conflicts on union fields like `network`
       return { ...card, ...override } as unknown as Card & { isVisible?: boolean };
     })
     .filter((card) => card.isVisible !== false);
 }
 
-export function getCardBySlug(slug: string): (Card & { isVisible?: boolean }) | undefined {
-  return getCards().find((c) => c.slug === slug);
+export async function getCardBySlug(
+  slug: string,
+): Promise<(Card & { isVisible?: boolean }) | undefined> {
+  const cards = await getCards();
+  return cards.find((c) => c.slug === slug);
 }
 
-export function getPriorityCards(): (Card & { isVisible?: boolean })[] {
-  return getCards()
+export async function getPriorityCards(): Promise<(Card & { isVisible?: boolean })[]> {
+  const cards = await getCards();
+  return cards
     .filter((c) => c.isPriority && c.priorityRank != null)
     .sort((a, b) => (a.priorityRank ?? 99) - (b.priorityRank ?? 99));
 }
 
-export function getRankingEntries(category: string): AdminRankingEntry[] {
-  const overrides = readAdminOverrides();
+export async function getRankingEntries(category: string): Promise<AdminRankingEntry[]> {
+  const overrides = await readAdminOverrides();
   return overrides.rankings[category] ?? [];
 }

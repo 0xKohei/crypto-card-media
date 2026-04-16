@@ -13,7 +13,7 @@ export async function GET(req: NextRequest) {
   if (!checkAuth(req)) {
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
-  const data = readAdminOverrides();
+  const data = await readAdminOverrides();
   return NextResponse.json(data.cards);
 }
 
@@ -27,14 +27,14 @@ export async function POST(req: NextRequest) {
     return NextResponse.json({ error: "id is required" }, { status: 400 });
   }
 
-  const data = readAdminOverrides();
+  const data = await readAdminOverrides();
   const idx = data.cards.findIndex((c) => c.id === body.id);
   if (idx >= 0) {
     data.cards[idx] = { ...data.cards[idx], ...body };
   } else {
     data.cards.push(body);
   }
-  writeAdminOverrides(data);
+  await writeAdminOverrides(data);
 
   revalidatePath("/");
   revalidatePath("/cards");
@@ -54,9 +54,9 @@ export async function DELETE(req: NextRequest) {
     return NextResponse.json({ error: "id is required" }, { status: 400 });
   }
 
-  const data = readAdminOverrides();
+  const data = await readAdminOverrides();
   data.cards = data.cards.filter((c) => c.id !== id);
-  writeAdminOverrides(data);
+  await writeAdminOverrides(data);
 
   revalidatePath("/");
   revalidatePath("/cards");
