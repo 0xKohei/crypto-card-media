@@ -1015,11 +1015,15 @@ function LoginForm({ onLogin }: { onLogin: (pw: string) => void }) {
             {loading ? "確認中..." : "ログイン"}
           </button>
         </form>
-        <p className="text-xs text-slate-500 mt-4 text-center">
-          デフォルトパスワード:{" "}
-          <code className="bg-slate-800 px-1.5 py-0.5 rounded text-slate-300">admin2026</code>
+        <p className="text-xs text-slate-500 mt-4 text-center leading-relaxed">
+          認証の優先順位: DB保存ハッシュ → 環境変数{" "}
+          <code className="bg-slate-800 px-1 rounded text-slate-400">ADMIN_PASSWORD</code>
           <br />
-          <span className="text-slate-600">環境変数 ADMIN_PASSWORD で変更可能</span>
+          <span className="text-slate-600">
+            開発環境のみ{" "}
+            <code className="bg-slate-800 px-1 rounded">admin2026</code>{" "}
+            が有効 · 本番は必ず設定が必要
+          </span>
         </p>
       </div>
     </div>
@@ -2079,8 +2083,176 @@ function HomepageFeaturedEditor({
 // ─────────────────────────────────────────────
 // Admin Dashboard
 // ─────────────────────────────────────────────
+// ─────────────────────────────────────────────
+// Password change section
+// ─────────────────────────────────────────────
+function PasswordChangeSection({
+  password,
+  showToast,
+}: {
+  password: string;
+  showToast: (msg: string, type: "success" | "error") => void;
+}) {
+  const [currentPw, setCurrentPw] = useState("");
+  const [newPw, setNewPw] = useState("");
+  const [confirmPw, setConfirmPw] = useState("");
+  const [saving, setSaving] = useState(false);
+  const [showCurrent, setShowCurrent] = useState(false);
+  const [showNew, setShowNew] = useState(false);
+
+  const handleSave = async () => {
+    if (newPw.length < 8) {
+      showToast("新しいパスワードは 8 文字以上で入力してください", "error");
+      return;
+    }
+    if (newPw !== confirmPw) {
+      showToast("新しいパスワードと確認用パスワードが一致しません", "error");
+      return;
+    }
+    if (newPw === currentPw) {
+      showToast("新しいパスワードは現在のパスワードと異なるものにしてください", "error");
+      return;
+    }
+    setSaving(true);
+    try {
+      await apiFetch("/api/admin/auth/password", "POST", currentPw, { newPassword: newPw });
+      showToast(
+        "パスワードを変更しました。ログアウトして新しいパスワードで再ログインしてください",
+        "success",
+      );
+      setCurrentPw("");
+      setNewPw("");
+      setConfirmPw("");
+    } catch (e) {
+      showToast(`変更失敗: ${e instanceof Error ? e.message : String(e)}`, "error");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div>
+      <div className="mb-6">
+        <h2 className="text-lg font-bold mb-1">認証設定</h2>
+        <p className="text-xs text-slate-400">
+          管理画面のログインパスワードを変更します。変更後は DB にハッシュとして保存されます。
+        </p>
+      </div>
+
+      {/* 優先順位の説明 */}
+      <div className="mb-6 bg-slate-800 border border-slate-700 rounded-xl p-4 text-xs text-slate-400 space-y-1.5">
+        <p className="font-semibold text-slate-300">認証の優先順位</p>
+        <ol className="list-decimal list-inside space-y-1">
+          <li>DB に保存されたパスワードハッシュ（このフォームで変更したもの）</li>
+          <li>環境変数 <code className="bg-slate-700 px-1 rounded">ADMIN_PASSWORD</code></li>
+          <li className="text-slate-500">
+            開発環境のみ: <code className="bg-slate-700 px-1 rounded">admin2026</code>{" "}
+            （production では無効）
+          </li>
+        </ol>
+        <p className="text-slate-500 pt-1">
+          ※ DBハッシュを設定すると以後はそちらが優先されます。
+          環境変数は DBハッシュを忘れた場合のリカバリ手段として保持してください。
+        </p>
+      </div>
+
+      <div className="bg-slate-900 border border-slate-700 rounded-xl p-6 max-w-md space-y-4">
+        {/* Current password */}
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1">現在のパスワード</label>
+          <div className="relative">
+            <input
+              type={showCurrent ? "text" : "password"}
+              value={currentPw}
+              onChange={(e) => setCurrentPw(e.target.value)}
+              placeholder="現在のパスワードを入力"
+              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 pr-10 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            <button
+              type="button"
+              onClick={() => setShowCurrent((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+            >
+              {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        {/* New password */}
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1">
+            新しいパスワード{" "}
+            <span className="text-slate-500 font-normal">（8文字以上）</span>
+          </label>
+          <div className="relative">
+            <input
+              type={showNew ? "text" : "password"}
+              value={newPw}
+              onChange={(e) => setNewPw(e.target.value)}
+              placeholder="新しいパスワードを入力"
+              className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 pr-10 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+            />
+            <button
+              type="button"
+              onClick={() => setShowNew((v) => !v)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 hover:text-slate-200"
+            >
+              {showNew ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+          {newPw.length > 0 && newPw.length < 8 && (
+            <p className="text-xs text-red-400 mt-1">8文字以上で入力してください</p>
+          )}
+        </div>
+
+        {/* Confirm new password */}
+        <div>
+          <label className="block text-xs font-medium text-slate-400 mb-1">新しいパスワード（確認）</label>
+          <input
+            type="password"
+            value={confirmPw}
+            onChange={(e) => setConfirmPw(e.target.value)}
+            placeholder="もう一度入力"
+            className="w-full bg-slate-800 border border-slate-600 rounded-lg px-3 py-2 text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-blue-500"
+          />
+          {confirmPw.length > 0 && newPw !== confirmPw && (
+            <p className="text-xs text-red-400 mt-1">パスワードが一致しません</p>
+          )}
+        </div>
+
+        <button
+          onClick={handleSave}
+          disabled={saving || !currentPw || !newPw || !confirmPw}
+          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white text-sm font-semibold px-5 py-2.5 rounded-xl transition-colors w-full justify-center"
+        >
+          <Save className="w-4 h-4" />
+          {saving ? "保存中..." : "パスワードを変更する"}
+        </button>
+      </div>
+
+      {/* Migration SQL note */}
+      <div className="mt-8 bg-slate-800/50 border border-slate-700 rounded-xl p-4 text-xs text-slate-400 space-y-2">
+        <p className="font-semibold text-slate-300">初回セットアップ: admin_settings テーブルの作成</p>
+        <p>パスワードをDB保存するには Supabase に以下のテーブルが必要です:</p>
+        <code className="block bg-slate-900 border border-slate-700 rounded px-3 py-2 font-mono text-slate-300 text-[11px] whitespace-pre">
+{`CREATE TABLE IF NOT EXISTS admin_settings (
+  key        text PRIMARY KEY,
+  value      text NOT NULL,
+  updated_at timestamptz DEFAULT now()
+);
+ALTER TABLE admin_settings ENABLE ROW LEVEL SECURITY;`}
+        </code>
+        <p className="text-slate-500">
+          テーブルがない場合、パスワード変更は失敗します（環境変数での認証は引き続き有効です）。
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────
 function AdminDashboard({ password, onLogout }: { password: string; onLogout: () => void }) {
-  const [tab, setTab] = useState<"cards" | "rankings" | "featured">("cards");
+  const [tab, setTab] = useState<"cards" | "rankings" | "featured" | "auth">("cards");
   const [cards, setCards] = useState<AdminCard[]>([]);
   const [loading, setLoading] = useState(true);
   const [loadError, setLoadError] = useState<string | null>(null);
@@ -2191,6 +2363,7 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
             { id: "cards" as const, label: `カード管理 (${cards.length}件)` },
             { id: "rankings" as const, label: "ランキング管理" },
             { id: "featured" as const, label: "トップ掲載管理" },
+            { id: "auth" as const, label: "認証設定" },
           ].map((t) => (
             <button
               key={t.id}
@@ -2222,11 +2395,12 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
               <div className="mb-5 bg-amber-950/40 border border-amber-700 rounded-xl flex items-start gap-3 px-4 py-3">
                 <ShieldAlert className="w-4 h-4 text-amber-400 flex-shrink-0 mt-0.5" />
                 <div>
-                  <p className="text-sm font-semibold text-amber-300">デフォルトパスワードを使用中</p>
+                  <p className="text-sm font-semibold text-amber-300">開発用デフォルトパスワードを使用中</p>
                   <p className="text-xs text-amber-400 mt-0.5">
-                    本番環境では環境変数{" "}
+                    このパスワードは development 環境専用です。本番デプロイ前に「認証設定」タブでパスワードを変更するか、
+                    環境変数{" "}
                     <code className="bg-amber-900/40 px-1 rounded font-mono">ADMIN_PASSWORD</code>{" "}
-                    を設定してください。誰でもログインできる状態です。
+                    を設定してください。production では <code className="bg-amber-900/40 px-1 rounded font-mono">admin2026</code> は使用不可です。
                   </p>
                 </div>
               </div>
@@ -2349,6 +2523,14 @@ function AdminDashboard({ password, onLogout }: { password: string; onLogout: ()
               showToast={showToast}
             />
           </div>
+        )}
+
+        {/* ── Auth settings tab ── */}
+        {tab === "auth" && (
+          <PasswordChangeSection
+            password={password}
+            showToast={showToast}
+          />
         )}
       </div>
     </div>

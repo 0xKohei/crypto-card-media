@@ -3,12 +3,7 @@ export const runtime = "edge";
 import { NextRequest, NextResponse } from "next/server";
 import { getRankings, setRankings } from "@/lib/admin-storage";
 import { revalidatePath } from "next/cache";
-
-function checkAuth(req: NextRequest): boolean {
-  const authHeader = req.headers.get("authorization");
-  const password = process.env.ADMIN_PASSWORD ?? "admin2026";
-  return authHeader === `Bearer ${password}`;
-}
+import { verifyAdminRequest } from "@/lib/auth";
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data });
@@ -41,7 +36,7 @@ function toFrontend(e: Awaited<ReturnType<typeof getRankings>>[number]): Fronten
  * ランキングエントリーを camelCase で返す。
  */
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return err("Unauthorized", 401);
+  if (!await verifyAdminRequest(req)) return err("Unauthorized", 401);
 
   try {
     const category = req.nextUrl.searchParams.get("category") ?? "overall";
@@ -58,7 +53,7 @@ export async function GET(req: NextRequest) {
  * camelCase を受け取り snake_case で保存。
  */
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) return err("Unauthorized", 401);
+  if (!await verifyAdminRequest(req)) return err("Unauthorized", 401);
 
   let body: { category: string; entries: FrontendRankingEntry[] };
   try {

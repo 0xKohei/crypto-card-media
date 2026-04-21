@@ -10,12 +10,7 @@ import {
 } from "@/lib/admin-storage";
 import type { Card, Region, Network } from "@/types";
 import { revalidatePath } from "next/cache";
-
-function checkAuth(req: NextRequest): boolean {
-  const authHeader = req.headers.get("authorization");
-  const password = process.env.ADMIN_PASSWORD ?? "admin2026";
-  return authHeader === `Bearer ${password}`;
-}
+import { verifyAdminRequest } from "@/lib/auth";
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data });
@@ -30,7 +25,7 @@ function err(message: string, status = 500) {
  * 管理画面は常に全カードを表示 (isVisible=false も含む)。
  */
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return err("Unauthorized", 401);
+  if (!await verifyAdminRequest(req)) return err("Unauthorized", 401);
 
   try {
     const overrides = await getCardOverrides();
@@ -141,7 +136,7 @@ export async function GET(req: NextRequest) {
  * slug が必須。top-level カラムと fees JSONB に分けて保存。
  */
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) return err("Unauthorized", 401);
+  if (!await verifyAdminRequest(req)) return err("Unauthorized", 401);
 
   let body: Record<string, unknown>;
   try {
@@ -214,7 +209,7 @@ export async function POST(req: NextRequest) {
  * rankings / homepage_featured から参照されている場合は 409 を返す。
  */
 export async function DELETE(req: NextRequest) {
-  if (!checkAuth(req)) return err("Unauthorized", 401);
+  if (!await verifyAdminRequest(req)) return err("Unauthorized", 401);
 
   const slug = req.nextUrl.searchParams.get("slug") ?? req.nextUrl.searchParams.get("id");
   if (!slug) return err("slug が必要です", 400);

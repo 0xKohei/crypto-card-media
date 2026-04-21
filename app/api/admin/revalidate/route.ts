@@ -2,15 +2,10 @@ export const runtime = "edge";
 
 import { NextRequest, NextResponse } from "next/server";
 import { revalidatePath } from "next/cache";
-
-function checkAuth(req: NextRequest): boolean {
-  const authHeader = req.headers.get("authorization");
-  const password = process.env.ADMIN_PASSWORD ?? "admin2026";
-  return authHeader === `Bearer ${password}`;
-}
+import { verifyAdminRequest } from "@/lib/auth";
 
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) {
+  if (!await verifyAdminRequest(req)) {
     return NextResponse.json({ success: false, error: "Unauthorized" }, { status: 401 });
   }
 

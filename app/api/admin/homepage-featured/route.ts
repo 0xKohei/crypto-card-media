@@ -4,12 +4,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { getHomepageFeaturedSlots, setHomepageFeatured } from "@/lib/admin-storage";
 import type { DbHomepageFeatured } from "@/lib/admin-storage";
 import { revalidatePath } from "next/cache";
-
-function checkAuth(req: NextRequest): boolean {
-  const authHeader = req.headers.get("authorization");
-  const password = process.env.ADMIN_PASSWORD ?? "admin2026";
-  return authHeader === `Bearer ${password}`;
-}
+import { verifyAdminRequest } from "@/lib/auth";
 
 function ok(data: unknown) {
   return NextResponse.json({ success: true, data });
@@ -23,7 +18,7 @@ function err(message: string, status = 500) {
  * slot 順にソートして返す。
  */
 export async function GET(req: NextRequest) {
-  if (!checkAuth(req)) return err("Unauthorized", 401);
+  if (!await verifyAdminRequest(req)) return err("Unauthorized", 401);
 
   try {
     const data = await getHomepageFeaturedSlots();
@@ -39,7 +34,7 @@ export async function GET(req: NextRequest) {
  * slot 1〜3 を一括 upsert する。
  */
 export async function POST(req: NextRequest) {
-  if (!checkAuth(req)) return err("Unauthorized", 401);
+  if (!await verifyAdminRequest(req)) return err("Unauthorized", 401);
 
   let body: { slots: DbHomepageFeatured[] };
   try {
