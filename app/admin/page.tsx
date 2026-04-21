@@ -390,6 +390,8 @@ function SectionHeading({ title }: { title: string }) {
 // Crop modal
 // ─────────────────────────────────────────────
 const CARD_ASPECT = 85.6 / 53.98; // ISO/IEC 7810 ID-1 card ratio ≈ 1.586
+// ISO/IEC 7810 corner radius ≈ 3.18 mm on 53.98 mm height → ~5.9%
+const CARD_CORNER_RATIO = 3.18 / 53.98;
 
 function CropModal({
   src,
@@ -401,13 +403,27 @@ function CropModal({
   onClose: () => void;
 }) {
   const imgRef = useRef<HTMLImageElement>(null);
+  const previewCanvasRef = useRef<HTMLCanvasElement>(null);
   const [ready, setReady] = useState(false);
   const [imgDims, setImgDims] = useState({ w: 0, h: 0 });
-  const [box, setBox] = useState({ x: 0, y: 0, w: 300, h: 189 });
-  const dragRef = useRef<{ startX: number; startY: number; boxX: number; boxY: number } | null>(null);
-  // Refs for latest values — avoids stale-closure bug in event handlers registered once
+  const [pos, setPos] = useState({ x: 0, y: 0 });
+  const [zoom, setZoom] = useState(0.8); // fraction of image width occupied by crop box
+
+  // Refs hold latest values — avoids stale-closure in event handlers registered once
   const imgDimsRef = useRef({ w: 0, h: 0 });
-  const boxRef = useRef({ x: 0, y: 0, w: 300, h: 189 });
+  const posRef = useRef({ x: 0, y: 0 });
+  const zoomRef = useRef(0.8);
+  const dragRef = useRef<{ sx: number; sy: number; px: number; py: number } | null>(null);
+
+  // Derived box dimensions
+  const boxW = imgDims.w * zoom;
+  const boxH = boxW / CARD_ASPECT;
+  const cornerPx = Math.round(boxH * CARD_CORNER_RATIO);
+
+  const clampPos = (px: number, py: number, bw: number, bh: number, iw: number, ih: number) => ({
+    x: Math.max(0, Math.min(px, iw - bw)),
+    y: Math.max(0, Math.min(py, ih - bh)),
+  });
 
   const onImgLoad = () => {
     const img = imgRef.current;
@@ -416,31 +432,47 @@ function CropModal({
     const h = img.clientHeight;
     imgDimsRef.current = { w, h };
     setImgDims({ w, h });
-    // Maintain aspect ratio: start with full width, clamp height, recalculate width if needed
-    let bw = w;
-    let bh = Math.round(bw / CARD_ASPECT);
-    if (bh > h) { bh = h; bw = Math.round(bh * CARD_ASPECT); }
-    const bx = Math.max(0, Math.round((w - bw) / 2));
-    const by = Math.max(0, Math.round((h - bh) / 2));
-    const newBox = { x: bx, y: by, w: bw, h: bh };
-    boxRef.current = newBox;
-    setBox(newBox);
+
+    const z = 0.8;
+    zoomRef.current = z;
+    const bw = w * z;
+    const bh = bw / CARD_ASPECT;
+    const px = (w - bw) / 2;
+    const py = Math.max(0, (h - bh) / 2);
+    posRef.current = { x: px, y: py };
+    setPos({ x: px, y: py });
     setReady(true);
   };
 
-  // Register handlers once (empty deps) — read latest values through refs
+  const handleZoom = (newZ: number) => {
+    const { w, h } = imgDimsRef.current;
+    const oldBw = w * zoomRef.current;
+    const oldBh = oldBw / CARD_ASPECT;
+    const newBw = w * newZ;
+    const newBh = newBw / CARD_ASPECT;
+    // Keep the center of the crop box fixed while resizing
+    const cx = posRef.current.x + oldBw / 2;
+    const cy = posRef.current.y + oldBh / 2;
+    const clamped = clampPos(cx - newBw / 2, cy - newBh / 2, newBw, newBh, w, h);
+    zoomRef.current = newZ;
+    posRef.current = clamped;
+    setZoom(newZ);
+    setPos(clamped);
+  };
+
+  // Mouse drag
   useEffect(() => {
     const move = (e: MouseEvent) => {
-      if (!dragRef.current || !imgDimsRef.current.w) return;
-      const dx = e.clientX - dragRef.current.startX;
-      const dy = e.clientY - dragRef.current.startY;
-      const { w: bw, h: bh } = boxRef.current;
-      const { w: iw, h: ih } = imgDimsRef.current;
-      const nx = Math.max(0, Math.min(dragRef.current.boxX + dx, iw - bw));
-      const ny = Math.max(0, Math.min(dragRef.current.boxY + dy, ih - bh));
-      const updated = { ...boxRef.current, x: nx, y: ny };
-      boxRef.current = updated;
-      setBox(updated);
+      if (!dragRef.current) return;
+      const { w, h } = imgDimsRef.current;
+      const z = zoomRef.current;
+      const bw = w * z;
+      const bh = bw / CARD_ASPECT;
+      const dx = e.clientX - dragRef.current.sx;
+      const dy = e.clientY - dragRef.current.sy;
+      const clamped = clampPos(dragRef.current.px + dx, dragRef.current.py + dy, bw, bh, w, h);
+      posRef.current = clamped;
+      setPos(clamped);
     };
     const up = () => { dragRef.current = null; };
     window.addEventListener("mousemove", move);
@@ -449,16 +481,91 @@ function CropModal({
       window.removeEventListener("mousemove", move);
       window.removeEventListener("mouseup", up);
     };
-  }, []); // empty — uses refs for current values
+  }, []); // empty — reads latest values via refs
+
+  // Touch drag
+  useEffect(() => {
+    const move = (e: TouchEvent) => {
+      if (!dragRef.current) return;
+      const t = e.touches[0];
+      const { w, h } = imgDimsRef.current;
+      const z = zoomRef.current;
+      const bw = w * z;
+      const bh = bw / CARD_ASPECT;
+      const dx = t.clientX - dragRef.current.sx;
+      const dy = t.clientY - dragRef.current.sy;
+      const clamped = clampPos(dragRef.current.px + dx, dragRef.current.py + dy, bw, bh, w, h);
+      posRef.current = clamped;
+      setPos(clamped);
+      e.preventDefault();
+    };
+    const end = () => { dragRef.current = null; };
+    window.addEventListener("touchmove", move, { passive: false });
+    window.addEventListener("touchend", end);
+    return () => {
+      window.removeEventListener("touchmove", move);
+      window.removeEventListener("touchend", end);
+    };
+  }, []);
 
   const handleMouseDown = (e: React.MouseEvent) => {
-    dragRef.current = { startX: e.clientX, startY: e.clientY, boxX: box.x, boxY: box.y };
+    dragRef.current = { sx: e.clientX, sy: e.clientY, px: posRef.current.x, py: posRef.current.y };
     e.preventDefault();
   };
+
+  const handleTouchStart = (e: React.TouchEvent) => {
+    const t = e.touches[0];
+    dragRef.current = { sx: t.clientX, sy: t.clientY, px: posRef.current.x, py: posRef.current.y };
+    e.preventDefault();
+  };
+
+  // Update preview canvas whenever pos/zoom/ready changes
+  useEffect(() => {
+    if (!ready) return;
+    const img = imgRef.current;
+    const canvas = previewCanvasRef.current;
+    if (!img || !canvas) return;
+
+    const { w } = imgDimsRef.current;
+    const z = zoomRef.current;
+    const bw = w * z;
+    const bh = bw / CARD_ASPECT;
+
+    const nw = img.naturalWidth > 0 ? img.naturalWidth : imgDimsRef.current.w;
+    const nh = img.naturalHeight > 0 ? img.naturalHeight : imgDimsRef.current.h;
+    const scaleX = nw / imgDimsRef.current.w;
+    const scaleY = nh / imgDimsRef.current.h;
+
+    const outW = 240;
+    const outH = Math.round(outW / CARD_ASPECT);
+    canvas.width = outW;
+    canvas.height = outH;
+    const ctx = canvas.getContext("2d");
+    if (!ctx) return;
+
+    const rx = Math.round(outH * CARD_CORNER_RATIO);
+    ctx.clearRect(0, 0, outW, outH);
+    // Clip to rounded rect
+    ctx.beginPath();
+    ctx.roundRect(0, 0, outW, outH, rx);
+    ctx.clip();
+    ctx.drawImage(
+      img,
+      posRef.current.x * scaleX,
+      posRef.current.y * scaleY,
+      bw * scaleX,
+      bh * scaleY,
+      0, 0, outW, outH,
+    );
+  }, [pos, zoom, ready]);
 
   const doCrop = () => {
     const img = imgRef.current;
     if (!img) return;
+    const { w } = imgDimsRef.current;
+    const z = zoomRef.current;
+    const bw = w * z;
+    const bh = bw / CARD_ASPECT;
     // SVG naturalWidth is 0 in some browsers — fall back to rendered size
     const nw = img.naturalWidth > 0 ? img.naturalWidth : imgDimsRef.current.w;
     const nh = img.naturalHeight > 0 ? img.naturalHeight : imgDimsRef.current.h;
@@ -473,10 +580,10 @@ function CropModal({
     if (!ctx) return;
     ctx.drawImage(
       img,
-      box.x * scaleX,
-      box.y * scaleY,
-      box.w * scaleX,
-      box.h * scaleY,
+      posRef.current.x * scaleX,
+      posRef.current.y * scaleY,
+      bw * scaleX,
+      bh * scaleY,
       0, 0, outW, outH,
     );
     canvas.toBlob((blob) => {
@@ -486,56 +593,115 @@ function CropModal({
 
   return (
     <div className="fixed inset-0 z-[60] bg-black/80 flex items-center justify-center p-4">
-      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl">
-        <div className="p-4 border-b border-slate-700 flex items-center justify-between">
+      <div className="bg-slate-900 border border-slate-700 rounded-2xl w-full max-w-2xl flex flex-col max-h-[95vh]">
+        {/* Header */}
+        <div className="p-4 border-b border-slate-700 flex items-center justify-between shrink-0">
           <div className="flex items-center gap-2">
             <Crop className="w-4 h-4 text-blue-400" />
             <h3 className="font-bold text-white text-sm">トリミング</h3>
           </div>
+          <button onClick={onClose} className="text-slate-400 hover:text-white">
+            <X className="w-4 h-4" />
+          </button>
+        </div>
+
+        {/* Zoom slider */}
+        <div className="px-4 pt-3 pb-2 shrink-0 space-y-1">
           <div className="flex items-center gap-3">
-            <span className="text-xs text-slate-400">カード比率 (1.586:1) でトリミング · ドラッグして範囲を調整</span>
-            <button onClick={onClose} className="text-slate-400 hover:text-white">
-              <X className="w-4 h-4" />
-            </button>
-          </div>
-        </div>
-        <div className="p-4 overflow-auto max-h-[60vh]">
-          <div className="relative inline-block select-none">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
-              ref={imgRef}
-              src={src}
-              alt="crop target"
-              className="max-w-full block"
-              style={{ maxHeight: "52vh" }}
-              onLoad={onImgLoad}
-              draggable={false}
+            <span className="text-xs text-slate-400 shrink-0 w-16">範囲 {Math.round(zoom * 100)}%</span>
+            <input
+              type="range"
+              min="0.2"
+              max="1.0"
+              step="0.01"
+              value={zoom}
+              onChange={(e) => handleZoom(Number(e.target.value))}
+              disabled={!ready}
+              className="flex-1 accent-blue-500 disabled:opacity-40"
             />
-            {ready && (
-              <>
-                {/* Overlay outside crop box */}
-                <div className="absolute inset-0 pointer-events-none">
-                  <div className="absolute top-0 left-0 right-0 bg-black/60" style={{ height: box.y }} />
-                  <div className="absolute left-0 right-0 bottom-0 bg-black/60" style={{ height: imgDims.h - box.y - box.h }} />
-                  <div className="absolute bg-black/60" style={{ top: box.y, left: 0, width: box.x, height: box.h }} />
-                  <div className="absolute bg-black/60" style={{ top: box.y, left: box.x + box.w, right: 0, height: box.h }} />
-                </div>
-                {/* Draggable crop box */}
-                <div
-                  className="absolute border-2 border-white cursor-move"
-                  style={{ left: box.x, top: box.y, width: box.w, height: box.h }}
-                  onMouseDown={handleMouseDown}
-                >
-                  <div className="absolute top-0 left-0 w-4 h-4 border-t-2 border-l-2 border-white" />
-                  <div className="absolute top-0 right-0 w-4 h-4 border-t-2 border-r-2 border-white" />
-                  <div className="absolute bottom-0 left-0 w-4 h-4 border-b-2 border-l-2 border-white" />
-                  <div className="absolute bottom-0 right-0 w-4 h-4 border-b-2 border-r-2 border-white" />
-                </div>
-              </>
-            )}
           </div>
+          <p className="text-xs text-slate-500">
+            ドラッグで移動 · スライダーで範囲調整 · 比率固定（ISO カード規格 1.586:1）
+          </p>
         </div>
-        <div className="p-4 border-t border-slate-700 flex justify-end gap-2">
+
+        {/* Crop area + preview side by side */}
+        <div className="flex gap-4 px-4 pb-4 min-h-0 flex-1 overflow-hidden">
+          {/* Main crop area */}
+          <div className="flex-1 overflow-auto">
+            <div className="relative inline-block select-none">
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                ref={imgRef}
+                src={src}
+                alt="crop target"
+                className="max-w-full block"
+                style={{ maxHeight: "48vh" }}
+                onLoad={onImgLoad}
+                draggable={false}
+              />
+              {ready && (
+                <>
+                  {/* Dark overlay outside crop box — 4 rectangles */}
+                  <div className="absolute inset-0 pointer-events-none">
+                    <div className="absolute top-0 left-0 right-0 bg-black/60"
+                      style={{ height: pos.y }} />
+                    <div className="absolute left-0 right-0 bottom-0 bg-black/60"
+                      style={{ height: imgDims.h - pos.y - boxH }} />
+                    <div className="absolute bg-black/60"
+                      style={{ top: pos.y, left: 0, width: pos.x, height: boxH }} />
+                    <div className="absolute bg-black/60"
+                      style={{ top: pos.y, left: pos.x + boxW, right: 0, height: boxH }} />
+                  </div>
+                  {/* Draggable crop box with rounded corners matching card spec */}
+                  <div
+                    className="absolute border-2 border-white/90 cursor-move touch-none"
+                    style={{
+                      left: pos.x,
+                      top: pos.y,
+                      width: boxW,
+                      height: boxH,
+                      borderRadius: cornerPx,
+                    }}
+                    onMouseDown={handleMouseDown}
+                    onTouchStart={handleTouchStart}
+                  >
+                    {/* Corner L-brackets */}
+                    <div className="absolute top-0 left-0 w-5 h-5 border-t-2 border-l-2 border-white" style={{ borderRadius: `${cornerPx}px 0 0 0` }} />
+                    <div className="absolute top-0 right-0 w-5 h-5 border-t-2 border-r-2 border-white" style={{ borderRadius: `0 ${cornerPx}px 0 0` }} />
+                    <div className="absolute bottom-0 left-0 w-5 h-5 border-b-2 border-l-2 border-white" style={{ borderRadius: `0 0 0 ${cornerPx}px` }} />
+                    <div className="absolute bottom-0 right-0 w-5 h-5 border-b-2 border-r-2 border-white" style={{ borderRadius: `0 0 ${cornerPx}px 0` }} />
+                    {/* Center crosshair hint */}
+                    <div className="absolute inset-0 flex items-center justify-center pointer-events-none opacity-40">
+                      <div className="relative w-6 h-6">
+                        <div className="absolute top-1/2 left-0 right-0 h-px bg-white" />
+                        <div className="absolute left-1/2 top-0 bottom-0 w-px bg-white" />
+                      </div>
+                    </div>
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+
+          {/* Preview panel */}
+          {ready && (
+            <div className="shrink-0 w-32 flex flex-col items-center gap-2 pt-1">
+              <span className="text-xs text-slate-400">プレビュー</span>
+              <canvas
+                ref={previewCanvasRef}
+                className="w-full shadow-lg"
+                style={{ borderRadius: Math.round((120 / CARD_ASPECT) * CARD_CORNER_RATIO) }}
+              />
+              <span className="text-[10px] text-slate-500 text-center leading-tight">
+                実際の表示に近い角丸で確認
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Footer */}
+        <div className="p-4 border-t border-slate-700 flex justify-between items-center shrink-0">
           <button
             onClick={onClose}
             className="px-4 py-2 text-sm text-slate-400 hover:text-white"
