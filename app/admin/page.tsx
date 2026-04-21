@@ -155,6 +155,7 @@ interface AdminCard {
   keyStrength: string;
   priorityRank: number;
   referralUrl: string;
+  officialUrl: string;
   cardImage: string;
   shortDescription: string;
   longDescription: string;
@@ -651,6 +652,7 @@ function NewCardModal({
         keyStrength: "",
         priorityRank: 99,
         referralUrl,
+        officialUrl,
         cardImage: "",
         shortDescription,
         longDescription: "",
@@ -1254,9 +1256,15 @@ function CardRow({
                 type="number"
               />
               <Field
-                label="紹介URL (referralUrl)"
+                label="紹介URL / 申込リンク (referralUrl)"
                 value={form.referralUrl ?? ""}
                 onChange={(v) => set("referralUrl", v)}
+                className="sm:col-span-2"
+              />
+              <Field
+                label="公式URL (officialUrl)"
+                value={form.officialUrl ?? ""}
+                onChange={(v) => set("officialUrl", v)}
                 className="sm:col-span-2"
               />
             </div>

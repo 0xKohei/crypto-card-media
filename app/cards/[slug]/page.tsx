@@ -284,7 +284,7 @@ export default async function CardDetailPage({ params }: { params: { slug: strin
                 rel="noopener noreferrer sponsored"
                 className="w-full flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 text-white font-bold py-3.5 px-4 rounded-xl transition-colors mb-3 shadow-sm shadow-blue-200"
               >
-                公式サイトで詳細を見る
+                カードをすぐに申し込む
                 <ExternalLink className="w-4 h-4" />
               </a>
             )}

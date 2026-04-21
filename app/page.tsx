@@ -142,6 +142,7 @@ export default async function HomePage() {
                 rank={entry.rank}
                 reason={entry.shortReason}
                 shortReason={entry.shortReason}
+                showCta
               />
             ))}
           </div>

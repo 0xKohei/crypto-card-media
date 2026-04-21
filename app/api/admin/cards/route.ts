@@ -57,6 +57,7 @@ export async function GET(req: NextRequest) {
         keyStrength: pick<string>(fees.keyStrength, card.keyStrength ?? ""),
         priorityRank: pick<number>(fees.priorityRank, card.priorityRank ?? 99),
         referralUrl: pick<string>(fees.referralUrl, card.referralUrl ?? ""),
+        officialUrl: pick<string>(fees.officialUrl, card.officialUrl ?? ""),
         fxFee: pick<string>(fees.fxFee, card.fxFee ?? ""),
         cashbackRate: pick<string>(fees.cashbackRate, card.cashbackRate ?? ""),
         cashbackDetails: pick<string>(fees.cashbackDetails, card.cashbackDetails ?? ""),
@@ -102,6 +103,7 @@ export async function GET(req: NextRequest) {
           keyStrength: pick<string>(fees.keyStrength, ""),
           priorityRank: pick<number>(fees.priorityRank, 99),
           referralUrl: pick<string>(fees.referralUrl, ""),
+          officialUrl: pick<string>(fees.officialUrl, ""),
           fxFee: pick<string>(fees.fxFee, "—"),
           cashbackRate: pick<string>(fees.cashbackRate, "—"),
           cashbackDetails: pick<string>(fees.cashbackDetails, ""),
@@ -153,7 +155,7 @@ export async function POST(req: NextRequest) {
 
   const fees: Record<string, unknown> = {};
   const feeFields = [
-    "longDescription", "referralUrl", "network", "keyStrength", "priorityRank",
+    "longDescription", "referralUrl", "officialUrl", "network", "keyStrength", "priorityRank",
     "fxFee", "cashbackRate", "cashbackDetails", "issuanceFee", "monthlyFee",
     "annualFee", "atmFee", "spendingLimit",
     "applePay", "googlePay", "physicalCard", "virtualCard", "stablecoinSupport",

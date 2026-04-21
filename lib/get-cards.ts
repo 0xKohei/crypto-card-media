@@ -71,6 +71,7 @@ function mergeCardOverride(
     // fees JSONB fields
     ...(fees.longDescription != null && { longDescription: fees.longDescription as string }),
     ...(fees.referralUrl != null && { referralUrl: fees.referralUrl as string }),
+    ...(fees.officialUrl != null && { officialUrl: fees.officialUrl as string }),
     ...(fees.network != null && { network: fees.network as Network }),
     ...(fees.keyStrength != null && { keyStrength: fees.keyStrength as string }),
     ...(fees.priorityRank != null && { priorityRank: fees.priorityRank as number }),
